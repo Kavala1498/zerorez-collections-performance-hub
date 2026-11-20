@@ -8,8 +8,15 @@ import type {
   UploadResult,
   UploadsListResponse,
 } from './types';
+import type { MeResponse } from '../auth/types';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+
+let tokenProvider: (() => string | null) | null = null;
+
+export function setAuthTokenProvider(provider: () => string | null): void {
+  tokenProvider = provider;
+}
 
 export class ApiError extends Error {
   readonly code: string;
@@ -23,6 +30,12 @@ export class ApiError extends Error {
     this.code = body?.error?.code ?? 'UNKNOWN';
     this.details = body?.error?.details;
   }
+}
+
+function authHeaders(): HeadersInit {
+  const token = tokenProvider?.() ?? null;
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
 }
 
 async function parseJson<T>(res: Response): Promise<T> {
@@ -41,17 +54,31 @@ async function parseJson<T>(res: Response): Promise<T> {
   return body as T;
 }
 
+async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers);
+  const auth = authHeaders();
+  for (const [k, v] of Object.entries(auth)) {
+    headers.set(k, v);
+  }
+  return fetch(`${API_BASE}${path}`, { ...init, headers });
+}
+
 function segmentQuery(segment: AnalyticsSegment): string {
   return `segment=${encodeURIComponent(segment)}`;
 }
 
+export async function fetchMe(): Promise<MeResponse> {
+  const res = await apiFetch('/api/me');
+  return parseJson(res);
+}
+
 export async function fetchDashboard(segment: AnalyticsSegment): Promise<DashboardResponse> {
-  const res = await fetch(`${API_BASE}/api/dashboard?${segmentQuery(segment)}`);
+  const res = await apiFetch(`/api/dashboard?${segmentQuery(segment)}`);
   return parseJson(res);
 }
 
 export async function fetchBases(segment: AnalyticsSegment = 'all'): Promise<BasesListResponse> {
-  const res = await fetch(`${API_BASE}/api/bases?${segmentQuery(segment)}`);
+  const res = await apiFetch(`/api/bases?${segmentQuery(segment)}`);
   return parseJson(res);
 }
 
@@ -59,8 +86,8 @@ export async function fetchBaseAnalytics(
   baseId: string,
   segment: AnalyticsSegment,
 ): Promise<BaseAnalyticsResponse> {
-  const res = await fetch(
-    `${API_BASE}/api/bases/${encodeURIComponent(baseId)}/analytics?${segmentQuery(segment)}`,
+  const res = await apiFetch(
+    `/api/bases/${encodeURIComponent(baseId)}/analytics?${segmentQuery(segment)}`,
   );
   return parseJson(res);
 }
@@ -69,14 +96,14 @@ export async function fetchBaseAccounts(
   baseId: string,
   segment: AnalyticsSegment = 'all',
 ): Promise<BaseAccountsResponse> {
-  const res = await fetch(
-    `${API_BASE}/api/bases/${encodeURIComponent(baseId)}/accounts?${segmentQuery(segment)}`,
+  const res = await apiFetch(
+    `/api/bases/${encodeURIComponent(baseId)}/accounts?${segmentQuery(segment)}`,
   );
   return parseJson(res);
 }
 
 export async function fetchUploads(): Promise<UploadsListResponse> {
-  const res = await fetch(`${API_BASE}/api/uploads`);
+  const res = await apiFetch('/api/uploads');
   return parseJson(res);
 }
 
@@ -90,7 +117,7 @@ export async function uploadWorkbook(input: {
   form.append('cutoffDate', input.cutoffDate);
   form.append('stageMode', input.stageMode);
 
-  const res = await fetch(`${API_BASE}/api/uploads`, {
+  const res = await apiFetch('/api/uploads', {
     method: 'POST',
     body: form,
   });

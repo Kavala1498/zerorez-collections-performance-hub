@@ -25,7 +25,7 @@ export function createUploadsController(service: UploadService): {
       const meta = UploadMetaSchema.parse({
         cutoffDate: req.body?.cutoffDate,
         stageMode: req.body?.stageMode ?? 'date',
-        uploadedBy: req.body?.uploadedBy,
+        uploadedBy: req.user?.email ?? req.body?.uploadedBy,
       });
 
       const result = await service.processUpload(

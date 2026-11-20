@@ -2,9 +2,19 @@
   "name": "@zerorez/api",
   "private": true,
   "version": "0.0.0",
-  "description": "Zerorez Collections Performance Hub API (Phases 2–4)",
+  "type": "module",
+  "description": "Zerorez Collections Performance Hub API",
   "scripts": {
-    "build": "echo \"api placeholder — implement in later phases\"",
-    "typecheck": "echo \"api placeholder — no sources yet\""
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts"
+  },
+  "dependencies": {
+    "@zerorez/shared": "workspace:*",
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
   }
 }

@@ -1,23 +1,17 @@
 # `@zerorez/web`
 
-React 19 + Vite frontend for Zerorez Collections Performance Hub (Phase 5).
+React + Vite UI for Zerorez Collections Performance Hub (English).
 
-## Scripts
+## Auth
+
+- Google Identity Services ID token → `Authorization: Bearer …` on API calls.
+- `VITE_GOOGLE_OAUTH_CLIENT_ID` must match API `GOOGLE_OAUTH_CLIENT_ID`.
+- Local bypass: `VITE_AUTH_DISABLED=true` (pair with API `AUTH_DISABLED=true`).
+- Admins see **Upload data**; viewers are read-only.
 
 ```bash
-pnpm --filter @zerorez/web dev      # http://localhost:5173 (proxies /api → :3001)
+VITE_AUTH_DISABLED=true pnpm --filter @zerorez/web dev
 pnpm --filter @zerorez/web build
-pnpm --filter @zerorez/web typecheck
 ```
 
-## Routes
-
-| Path | Page |
-|------|------|
-| `/` | Dashboard (KPIs, stages, bases table, insights) |
-| `/bases/:id` | Base analytics |
-| `/cargar` | Excel upload + upload history |
-
-UI is English (matches `reference/zerorez-crm.html` wording). Theme: light / dark (toggle + `prefers-color-scheme`). Design tokens match `arquitectura` §7.
-
-Optional: set `VITE_API_BASE_URL` if the API is not proxied (default uses Vite proxy to `http://localhost:3001`).
+Set `VITE_API_BASE_URL` in production to the deployed API origin.

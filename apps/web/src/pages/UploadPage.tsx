@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { uploadWorkbook, fetchUploads } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 import { QueryState } from '../components/QueryState';
 
 function todayIso(): string {
@@ -10,6 +12,8 @@ function todayIso(): string {
 
 export function UploadPage() {
   const queryClient = useQueryClient();
+  const { isAdmin, authDisabled } = useAuth();
+  const canUpload = isAdmin || authDisabled;
   const [cutoffDate, setCutoffDate] = useState(todayIso);
   const [stageMode, setStageMode] = useState<'date' | 'label'>('date');
   const [file, setFile] = useState<File | null>(null);
@@ -41,10 +45,23 @@ export function UploadPage() {
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (!canUpload) return;
     mutation.mutate();
   };
 
   const latest = uploads.data?.uploads[0];
+
+  if (!canUpload) {
+    return (
+      <div className="card">
+        <h2>Upload restricted</h2>
+        <p>
+          Only admins can upload Excel files. Your account is read-only. Ask a collections admin if
+          you need access, or return to the <Link to="/">dashboard</Link>.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>

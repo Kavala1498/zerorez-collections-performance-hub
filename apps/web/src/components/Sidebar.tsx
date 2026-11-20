@@ -6,9 +6,10 @@ import { formatCompactK } from '../lib/format';
 
 type Props = {
   onNavigate?: () => void;
+  canUpload?: boolean;
 };
 
-export function Sidebar({ onNavigate }: Props) {
+export function Sidebar({ onNavigate, canUpload = true }: Props) {
   const basesQuery = useQuery({
     queryKey: ['bases', 'all'],
     queryFn: () => fetchBases('all'),
@@ -37,13 +38,15 @@ export function Sidebar({ onNavigate }: Props) {
       >
         <span>Dashboard</span>
       </NavLink>
-      <NavLink
-        to="/cargar"
-        className={({ isActive }) => `nav-item${isActive ? ' on' : ''}`}
-        onClick={onNavigate}
-      >
-        <span>Upload data</span>
-      </NavLink>
+      {canUpload ? (
+        <NavLink
+          to="/cargar"
+          className={({ isActive }) => `nav-item${isActive ? ' on' : ''}`}
+          onClick={onNavigate}
+        >
+          <span>Upload data</span>
+        </NavLink>
+      ) : null}
 
       <h3>Bases</h3>
       {BASES.map((base) => {

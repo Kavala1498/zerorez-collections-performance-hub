@@ -30,6 +30,8 @@ export const AccountSchema = z.object({
   invoice_url: z.string().nullable().optional(),
   technician: z.string().nullable().optional(),
   status: z.string().nullable().optional(),
+  /** Raw Aging bucket label from Excel (used when stage_mode is `label`). */
+  aging_bucket: z.string().nullable().optional(),
   accountability: z.string().nullable().optional(),
   terms: z.string().nullable().optional(),
   last_contacted: z.string().nullable().optional(),
@@ -41,7 +43,7 @@ export const AccountSchema = z.object({
   first_seen: z.string().nullable().optional(),
   last_seen: z.string().nullable().optional(),
   resolved_at: z.string().nullable().optional(),
-  /** Last CRM editor (email). Set by PATCH /api/accounts/:id. */
+  /** Last CRM editor label (local browser edits). */
   updated_by: z.string().nullable().optional(),
   updated_at: z.string().nullable().optional(),
 });

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { Account } from '@zerorez/shared';
+import type { Account } from '../src/types.js';
 import {
   buildSnapshotsForUpload,
   mergeAccountsForUpload,
-} from '../src/services/uploadMerge.js';
+} from '../src/uploadMerge.js';
 
 function account(partial: Partial<Account> & Pick<Account, 'id' | 'base'>): Account {
   return {

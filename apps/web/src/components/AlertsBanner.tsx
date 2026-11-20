@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import type { AlertsResponse } from '../api/types';
+import type { AlertsResponse } from '../data/types';
 import { formatMoney } from '../lib/format';
 
 type Props = {

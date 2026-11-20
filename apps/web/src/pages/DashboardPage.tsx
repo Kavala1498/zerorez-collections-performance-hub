@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { getCriticalStageAlerts, getDashboard, getTrends } from '@zerorez/shared';
 import { useNavigate } from 'react-router-dom';
-import { fetchAlerts, fetchDashboard, fetchTrends } from '../api/client';
 import { AlertsBanner } from '../components/AlertsBanner';
 import { InsightsCard } from '../components/InsightsCard';
 import { KpiCards } from '../components/KpiCards';
@@ -8,29 +7,20 @@ import { QueryState } from '../components/QueryState';
 import { SegmentToggle } from '../components/SegmentToggle';
 import { StageStack } from '../components/StageStack';
 import { TrendsChart } from '../components/TrendsChart';
+import { useData } from '../data/DataContext';
 import { useSegment } from '../hooks/useSegment';
 import { formatMoney, formatMoney0, formatPercent } from '../lib/format';
 
 export function DashboardPage() {
   const [segment, setSegment] = useSegment();
   const navigate = useNavigate();
+  const { state, ready, revision } = useData();
+  void revision;
 
-  const query = useQuery({
-    queryKey: ['dashboard', segment],
-    queryFn: () => fetchDashboard(segment),
-  });
+  const data = ready ? getDashboard(state, segment) : null;
+  const trends = ready ? getTrends(state, segment) : null;
+  const alerts = ready ? getCriticalStageAlerts(state, segment) : null;
 
-  const trends = useQuery({
-    queryKey: ['trends', segment],
-    queryFn: () => fetchTrends(segment),
-  });
-
-  const alerts = useQuery({
-    queryKey: ['alerts', segment],
-    queryFn: () => fetchAlerts(segment),
-  });
-
-  const data = query.data;
   const isEmpty =
     !!data &&
     data.kpis.overdueAccounts === 0 &&
@@ -39,9 +29,9 @@ export function DashboardPage() {
 
   return (
     <QueryState
-      isLoading={query.isLoading}
-      isError={query.isError}
-      error={query.error}
+      isLoading={!ready}
+      isError={false}
+      error={null}
       isEmpty={isEmpty}
       emptyTitle="No data loaded"
       emptyMessage="Go to Upload data and upload a collections Excel file to populate the dashboard."
@@ -57,7 +47,7 @@ export function DashboardPage() {
             </span>
           </div>
 
-          <AlertsBanner data={alerts.data} />
+          <AlertsBanner data={alerts ?? undefined} />
 
           <KpiCards
             items={[
@@ -70,7 +60,7 @@ export function DashboardPage() {
                 value: String(data.kpis.overdueAccounts),
               },
               {
-                label: 'Over 45 days (critical stage)',
+                label: '49+ days (critical stages)',
                 value: formatMoney0(data.kpis.over45Amount),
                 hint: `${formatPercent(data.kpis.over45Share)} of portfolio`,
               },
@@ -88,7 +78,7 @@ export function DashboardPage() {
 
           <TrendsChart
             title="Portfolio past-due trend"
-            points={trends.data?.points ?? []}
+            points={trends?.points ?? []}
           />
 
           <div className="card">

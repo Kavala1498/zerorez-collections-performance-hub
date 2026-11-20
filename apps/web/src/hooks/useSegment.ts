@@ -1,5 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
-import type { AnalyticsSegment } from '../api/types';
+import type { AnalyticsSegment } from '@zerorez/shared';
 
 const VALID: AnalyticsSegment[] = ['all', 'C', 'R'];
 

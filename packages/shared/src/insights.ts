@@ -44,22 +44,22 @@ export function buildInsights(
     `The 5 largest accounts add up to ${money(top5Sum)} (${pct(top5Sum, total)} of the past-due amount). The largest is ${largest.client_name} at ${money(largest.amount_due)}.`,
   );
 
-  // 2. Over 45 days (stages 4–5), including no last-contact callout
-  const over45 = pastDue.filter((a) => a.stage != null && a.stage >= 4);
-  const noContact = over45.filter((a) => !a.last_contacted);
-  let over45Msg = `${over45.length} accounts are over 45 days past due, totaling ${money(sumDue(over45))} (${pct(sumDue(over45), total)}).`;
+  // 2. Critical stages (4–5 → 49+ DPD), including no last-contact callout
+  const critical = pastDue.filter((a) => a.stage != null && a.stage >= 4);
+  const noContact = critical.filter((a) => !a.last_contacted);
+  let criticalMsg = `${critical.length} accounts are 49+ days past due, totaling ${money(sumDue(critical))} (${pct(sumDue(critical), total)}).`;
   if (noContact.length > 0) {
-    over45Msg += ` ${noContact.length} of them (${money(sumDue(noContact))}) have no last-contact date.`;
+    criticalMsg += ` ${noContact.length} of them (${money(sumDue(noContact))}) have no last-contact date.`;
   }
-  insights.push(over45Msg);
+  insights.push(criticalMsg);
 
-  // 3. Over 30 days (stages 3+) with no status
+  // 3. Stage 3+ (30+ DPD) with no status
   const noStatus = pastDue.filter(
     (a) => a.stage != null && a.stage >= 3 && !(a.status && String(a.status).trim()),
   );
   if (noStatus.length > 0) {
     insights.push(
-      `${noStatus.length} accounts over 30 days (${money(sumDue(noStatus))}) have no status assigned.`,
+      `${noStatus.length} accounts 30+ days (${money(sumDue(noStatus))}) have no status assigned.`,
     );
   }
 

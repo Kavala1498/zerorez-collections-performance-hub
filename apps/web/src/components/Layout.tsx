@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { Outlet, useLocation, useParams } from 'react-router-dom';
 import { BASES } from '@zerorez/shared';
-import { useAuth } from '../auth/AuthContext';
 import { useTheme } from '../hooks/useTheme';
 import { Sidebar } from './Sidebar';
 
 function crumbLabel(pathname: string, baseId?: string): string {
-  if (pathname.startsWith('/cargar') || pathname.startsWith('/upload')) return 'Upload data';
+  if (pathname.startsWith('/upload') || pathname.startsWith('/cargar')) return 'Upload data';
   if (pathname.startsWith('/bases/') && baseId) {
-    // Match reference MVP labels (e.g. St.Louis, BayArea, SaltLakeCity).
     return BASES.find((b) => b.id === baseId)?.id ?? baseId;
   }
   return 'Dashboard';
@@ -19,12 +17,11 @@ export function Layout() {
   const location = useLocation();
   const params = useParams();
   const { resolved, toggle } = useTheme();
-  const { user, signOut, authDisabled, isAdmin } = useAuth();
   const crumb = crumbLabel(location.pathname, params.id);
 
   return (
     <div className={`shell${open ? ' open' : ''}`}>
-      <Sidebar onNavigate={() => setOpen(false)} canUpload={isAdmin || authDisabled} />
+      <Sidebar onNavigate={() => setOpen(false)} />
       <div className="content">
         <header className="topbar">
           <button
@@ -39,12 +36,6 @@ export function Layout() {
             Zerorez Collections Performance Hub / <b>{crumb}</b>
           </div>
           <div className="topbar-actions">
-            {user ? (
-              <span className="user-chip" title={user.email}>
-                {user.name ?? user.email}
-                <em>{user.role}</em>
-              </span>
-            ) : null}
             <button
               type="button"
               aria-label={resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -53,11 +44,6 @@ export function Layout() {
             >
               {resolved === 'dark' ? 'Light' : 'Dark'}
             </button>
-            {!authDisabled && user ? (
-              <button type="button" onClick={signOut}>
-                Sign out
-              </button>
-            ) : null}
             <span className="by2">Developed by Alejandro Torres</span>
           </div>
         </header>

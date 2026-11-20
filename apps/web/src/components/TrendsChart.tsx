@@ -1,5 +1,5 @@
 import { formatMoney0 } from '../lib/format';
-import type { TrendPoint } from '../api/types';
+import type { TrendPoint } from '@zerorez/shared';
 
 type Props = {
   title?: string;

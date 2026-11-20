@@ -44,7 +44,7 @@ describe('buildInsights', () => {
     );
   });
 
-  it('flags over-45-day accounts without last contact', () => {
+  it('flags 49+-day accounts without last contact', () => {
     const accounts = [
       acct({
         client_name: 'Late One',
@@ -60,21 +60,21 @@ describe('buildInsights', () => {
       }),
       acct({ client_name: 'Fresh', amount_due: 200, stage: 1 }),
     ];
-    const line = buildInsights(accounts).find((l) => l.includes('over 45 days'));
+    const line = buildInsights(accounts).find((l) => l.includes('49+ days'));
     expect(line).toBeDefined();
     expect(line).toContain('2 accounts');
     expect(line).toContain('1 of them');
     expect(line).toContain('no last-contact date');
   });
 
-  it('flags over-30-day accounts with no status', () => {
+  it('flags 30+-day accounts with no status', () => {
     const accounts = [
       acct({ client_name: 'No Status', amount_due: 800, stage: 3, status: null }),
       acct({ client_name: 'Has Status', amount_due: 400, stage: 3, status: 'P2P' }),
       acct({ client_name: 'Early', amount_due: 200, stage: 2, status: null }),
     ];
     const line = buildInsights(accounts).find((l) => l.includes('no status assigned'));
-    expect(line).toContain('1 accounts over 30 days');
+    expect(line).toContain('1 accounts 30+ days');
     expect(line).toContain('$800');
   });
 

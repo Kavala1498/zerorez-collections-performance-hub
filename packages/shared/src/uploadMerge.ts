@@ -1,10 +1,5 @@
-import {
-  stageFromDays,
-  type Account,
-  type Segment,
-  type Snapshot,
-  type StageId,
-} from '@zerorez/shared';
+import { stageFromAgingLabel, stageFromDays, type StageId } from './stages.js';
+import type { Account, Segment, Snapshot, StageMode } from './types.js';
 
 /** CRM fields preserved when the Excel cell is empty on re-upload. */
 export const CRM_PRESERVE_FIELDS = [
@@ -21,11 +16,23 @@ function isEmpty(value: unknown): boolean {
   return value == null || (typeof value === 'string' && value.trim() === '');
 }
 
-function daysBetween(serviceDate: string, cutoffDate: string): number {
+export function daysBetween(serviceDate: string, cutoffDate: string): number {
   const service = Date.parse(serviceDate);
   const cutoff = Date.parse(cutoffDate);
   if (!Number.isFinite(service) || !Number.isFinite(cutoff)) return Number.NaN;
   return Math.floor((cutoff - service) / 86_400_000);
+}
+
+export function resolveAccountStage(
+  account: Account,
+  cutoffDate: string,
+  stageMode: StageMode,
+): StageId | null {
+  if (stageMode === 'label') {
+    return stageFromAgingLabel(account.aging_bucket);
+  }
+  const days = daysBetween(account.service_date, cutoffDate);
+  return Number.isFinite(days) ? stageFromDays(days) : null;
 }
 
 /**
@@ -91,15 +98,15 @@ export function buildSnapshotsForUpload(params: {
   accounts: Account[];
   uploadId: string;
   cutoffDate: string;
+  stageMode?: StageMode;
 }): Snapshot[] {
-  const { accounts, uploadId, cutoffDate } = params;
+  const { accounts, uploadId, cutoffDate, stageMode = 'date' } = params;
   type Agg = { accounts: number; amount: number };
   const buckets = new Map<string, Agg>();
 
   for (const account of accounts) {
     if (account.resolved_at) continue;
-    const days = daysBetween(account.service_date, cutoffDate);
-    const stage = stageFromDays(days);
+    const stage = resolveAccountStage(account, cutoffDate, stageMode);
     if (stage == null) continue;
 
     const key = `${account.base}|${account.segment}|${stage}`;

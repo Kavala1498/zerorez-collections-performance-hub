@@ -1,17 +1,15 @@
 # `@zerorez/web`
 
-React + Vite UI for Zerorez Collections Performance Hub (English).
+Standalone React + Vite UI for Zerorez Collections Performance Hub (English, light/dark).
 
-## Auth
-
-- Google Identity Services ID token → `Authorization: Bearer …` on API calls.
-- `VITE_GOOGLE_OAUTH_CLIENT_ID` must match API `GOOGLE_OAUTH_CLIENT_ID`.
-- Local bypass: `VITE_AUTH_DISABLED=true` (pair with API `AUTH_DISABLED=true`).
-- Admins see **Upload data**; viewers are read-only.
+Upload a collections `.xlsx` in the browser. Parsing, stage/KPI math, and persistence all run locally (IndexedDB). No API, Google Sheets, or OAuth.
 
 ```bash
-VITE_AUTH_DISABLED=true pnpm --filter @zerorez/web dev
-pnpm --filter @zerorez/web build
+pnpm install
+pnpm --filter @zerorez/shared build
+pnpm --filter @zerorez/web dev
 ```
 
-Set `VITE_API_BASE_URL` in production to the deployed API origin.
+Open http://localhost:5173 → **Upload data** → choose `.xlsx`, cutoff date, and stage mode.
+
+Production build: `pnpm --filter @zerorez/web build` → publish `apps/web/dist`.

@@ -1,0 +1,10 @@
+{
+  "name": "@zerorez/api",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Zerorez Collections Performance Hub API (Phases 2–4)",
+  "scripts": {
+    "build": "echo \"api placeholder — implement in later phases\"",
+    "typecheck": "echo \"api placeholder — no sources yet\""
+  }
+}

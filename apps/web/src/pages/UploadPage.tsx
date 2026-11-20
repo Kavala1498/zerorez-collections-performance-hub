@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import type { StageMode } from '@zerorez/shared';
+import { loadStoredPin, saveStoredPin } from '../data/api';
 import { useData } from '../data/DataContext';
 
 function todayIso(): string {
@@ -9,10 +10,19 @@ function todayIso(): string {
 }
 
 export function UploadPage() {
-  const { state, ready, uploadWorkbook, updateSettings, clearData } = useData();
+  const {
+    state,
+    ready,
+    fromServer,
+    uploadPinRequired,
+    uploadWorkbook,
+    updateSettings,
+    clearData,
+  } = useData();
   const [cutoffDate, setCutoffDate] = useState(todayIso);
   const [stageMode, setStageMode] = useState<StageMode>('date');
   const [file, setFile] = useState<File | null>(null);
+  const [pin, setPin] = useState(loadStoredPin);
   const [pending, setPending] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -35,11 +45,21 @@ export function UploadPage() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!file || pending) return;
+    if (uploadPinRequired && !pin.trim()) {
+      showToast('Upload PIN is required');
+      return;
+    }
     setPending(true);
     try {
-      const result = await uploadWorkbook({ file, cutoffDate, stageMode });
+      saveStoredPin(pin.trim());
+      const result = await uploadWorkbook({
+        file,
+        cutoffDate,
+        stageMode,
+        pin: pin.trim() || undefined,
+      });
       showToast(
-        `Loaded ${result.rowsLoaded} rows · ${result.accountsOpen} open · ${result.warnings.length} warning(s)`,
+        `Shared snapshot saved · ${result.rowsLoaded} rows · ${result.accountsOpen} open · ${result.warnings.length} warning(s)`,
       );
       setFile(null);
     } catch (err) {
@@ -53,7 +73,11 @@ export function UploadPage() {
     setCutoffDate(value);
     if (!latest || !value) return;
     try {
-      await updateSettings({ cutoffDate: value, stageMode });
+      await updateSettings({
+        cutoffDate: value,
+        stageMode,
+        pin: pin.trim() || undefined,
+      });
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Could not update cutoff');
     }
@@ -63,24 +87,36 @@ export function UploadPage() {
     setStageMode(value);
     if (!latest) return;
     try {
-      await updateSettings({ cutoffDate, stageMode: value });
+      await updateSettings({
+        cutoffDate,
+        stageMode: value,
+        pin: pin.trim() || undefined,
+      });
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Could not update stage mode');
     }
   };
 
   const onClear = async () => {
-    await clearData();
-    setFile(null);
-    setCutoffDate(todayIso());
-    setStageMode('date');
-    showToast('Cleared loaded data');
+    if (uploadPinRequired && !pin.trim()) {
+      showToast('Upload PIN is required to clear the shared snapshot');
+      return;
+    }
+    try {
+      await clearData(pin.trim() || undefined);
+      setFile(null);
+      setCutoffDate(todayIso());
+      setStageMode('date');
+      showToast('Cleared shared snapshot');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Could not clear data');
+    }
   };
 
   if (!ready) {
     return (
       <div className="card">
-        <p>Loading local data…</p>
+        <p>Loading shared snapshot…</p>
       </div>
     );
   }
@@ -94,8 +130,8 @@ export function UploadPage() {
             <b>Choose your .xlsx file</b>
             <span>
               The tabs for the 14 bases are read (Residential and Commercial tables); all other
-              tabs are ignored with a warning. Everything is processed in your browser — nothing
-              is uploaded to a server.
+              tabs are ignored with a warning. The file is parsed in your browser, then the
+              processed snapshot is saved to the shared store so every viewer sees the same data.
             </span>
             <input
               type="file"
@@ -125,11 +161,24 @@ export function UploadPage() {
                 <option value="label">Use the Aging bucket column</option>
               </select>
             </label>
+            <label className="field">
+              Upload PIN{uploadPinRequired ? '' : ' (optional)'}
+              <input
+                type="password"
+                autoComplete="off"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                placeholder={uploadPinRequired ? 'Required to upload' : 'Only if configured'}
+              />
+            </label>
           </div>
 
           <p className="hint">
             By service date, using dashboard ranges: 0–14, 15–29, 30–48, 49–63 and over 63 days
-            before the cutoff date. Data stays in this browser (IndexedDB).
+            before the cutoff date.
+            {fromServer
+              ? ' Source of truth: shared API snapshot (IndexedDB is cache only).'
+              : ' API unreachable — showing local cache if any.'}
           </p>
 
           <div style={{ marginTop: 14, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -138,7 +187,7 @@ export function UploadPage() {
             </button>
             {uploads.length > 0 ? (
               <button type="button" onClick={() => void onClear()}>
-                Clear loaded data
+                Clear shared data
               </button>
             ) : null}
             <Link to="/" className="hint" style={{ alignSelf: 'center' }}>

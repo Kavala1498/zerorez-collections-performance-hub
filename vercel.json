@@ -2,5 +2,14 @@
   "buildCommand": "pnpm install && pnpm --filter @zerorez/shared build && pnpm --filter @zerorez/web build",
   "outputDirectory": "apps/web/dist",
   "installCommand": "pnpm install",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "functions": {
+    "api/**/*.ts": {
+      "memory": 1024,
+      "maxDuration": 30,
+      "includeFiles": "migrations/**"
+    }
+  },
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
 }

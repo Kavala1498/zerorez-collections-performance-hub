@@ -17,6 +17,16 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import {
+  ApiError,
+  deleteLatestSnapshot,
+  fetchHealth,
+  fetchLatestSnapshot,
+  latestToPortfolio,
+  loadStoredPin,
+  postSnapshot,
+  saveStoredPin,
+} from './api';
 import { clearPortfolio, loadPortfolio, savePortfolio } from './idb';
 
 export type UploadResult = {
@@ -41,13 +51,22 @@ type DataContextValue = {
   ready: boolean;
   state: PortfolioState;
   revision: number;
+  /** True when data came from the shared API (not only local cache). */
+  fromServer: boolean;
+  /** True when UPLOAD_PIN is configured on the API. */
+  uploadPinRequired: boolean;
   uploadWorkbook: (input: {
     file: File;
     cutoffDate: string;
     stageMode: StageMode;
+    pin?: string;
   }) => Promise<UploadResult>;
-  updateSettings: (input: { cutoffDate: string; stageMode: StageMode }) => Promise<void>;
-  clearData: () => Promise<void>;
+  updateSettings: (input: {
+    cutoffDate: string;
+    stageMode: StageMode;
+    pin?: string;
+  }) => Promise<void>;
+  clearData: (pin?: string) => Promise<void>;
   patchAccount: (accountId: string, patch: AccountPatch) => Promise<Account>;
 };
 
@@ -66,13 +85,45 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PortfolioState>(EMPTY);
   const [ready, setReady] = useState(false);
   const [revision, setRevision] = useState(0);
+  const [fromServer, setFromServer] = useState(false);
+  const [uploadPinRequired, setUploadPinRequired] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const loaded = await loadPortfolio();
+      let pinRequired = false;
+      try {
+        const health = await fetchHealth();
+        pinRequired = health.uploadPinRequired;
+      } catch {
+        // API may be down during first paint; continue with cache / empty.
+      }
+
+      try {
+        const latest = await fetchLatestSnapshot();
+        if (cancelled) return;
+        setUploadPinRequired(pinRequired);
+        if (latest) {
+          const portfolio = latestToPortfolio(latest);
+          setState(portfolio);
+          setFromServer(true);
+          await savePortfolio(portfolio);
+        } else {
+          setState(EMPTY);
+          setFromServer(true);
+          await clearPortfolio();
+        }
+        setReady(true);
+        return;
+      } catch {
+        // Fall back to IndexedDB cache only when the API is unreachable.
+      }
+
       if (cancelled) return;
-      setState(loaded);
+      const cached = await loadPortfolio();
+      setUploadPinRequired(pinRequired);
+      setState(cached);
+      setFromServer(false);
       setReady(true);
     })();
     return () => {
@@ -80,14 +131,51 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const persist = useCallback(async (next: PortfolioState) => {
+  const persistLocal = useCallback(async (next: PortfolioState) => {
     setState(next);
     setRevision((r) => r + 1);
     await savePortfolio(next);
   }, []);
 
+  const pushSnapshot = useCallback(
+    async (next: PortfolioState, meta: {
+      cutoffDate: string;
+      stageMode: StageMode;
+      uploadedAt: string;
+      filename: string;
+      warnings: string[];
+      pin?: string;
+    }) => {
+      const pin = (meta.pin ?? loadStoredPin()) || null;
+      if (meta.pin) saveStoredPin(meta.pin);
+      const saved = await postSnapshot(
+        {
+          cutoffDate: meta.cutoffDate,
+          stageMode: meta.stageMode,
+          uploadedAt: meta.uploadedAt,
+          filename: meta.filename,
+          warnings: meta.warnings,
+          accounts: next.accounts,
+          uploads: next.uploads,
+          snapshots: next.snapshots,
+        },
+        pin,
+      );
+      const portfolio = latestToPortfolio(saved);
+      setFromServer(true);
+      await persistLocal(portfolio);
+      return portfolio;
+    },
+    [persistLocal],
+  );
+
   const uploadWorkbook = useCallback(
-    async (input: { file: File; cutoffDate: string; stageMode: StageMode }) => {
+    async (input: {
+      file: File;
+      cutoffDate: string;
+      stageMode: StageMode;
+      pin?: string;
+    }) => {
       const buffer = await input.file.arrayBuffer();
       const parsed = await parseWorkbook(buffer);
       const uploadId = newId();
@@ -119,7 +207,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         warnings: parsed.warnings,
       };
 
-      // Keep prior snapshots for trends; replace accounts with the merged set.
       const next: PortfolioState = {
         accounts: merged,
         uploads: [...state.uploads.filter((u) => u.id !== uploadId), upload],
@@ -128,7 +215,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ...snapshots,
         ],
       };
-      await persist(next);
+
+      await pushSnapshot(next, {
+        cutoffDate: input.cutoffDate,
+        stageMode: input.stageMode,
+        uploadedAt: nowIso,
+        filename: input.file.name,
+        warnings: parsed.warnings,
+        pin: input.pin,
+      });
 
       return {
         upload,
@@ -140,11 +235,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         accountsResolved: merged.filter((a) => !!a.resolved_at).length,
       };
     },
-    [persist, state.accounts, state.snapshots, state.uploads],
+    [pushSnapshot, state.accounts, state.snapshots, state.uploads],
   );
 
   const updateSettings = useCallback(
-    async (input: { cutoffDate: string; stageMode: StageMode }) => {
+    async (input: { cutoffDate: string; stageMode: StageMode; pin?: string }) => {
       if (state.uploads.length === 0) return;
       const latest = [...state.uploads].sort((a, b) =>
         b.uploaded_at.localeCompare(a.uploaded_at),
@@ -168,16 +263,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ...snapshots,
         ],
       };
-      await persist(next);
+      await pushSnapshot(next, {
+        cutoffDate: input.cutoffDate,
+        stageMode: input.stageMode,
+        uploadedAt: updated.uploaded_at,
+        filename: updated.filename,
+        warnings: updated.warnings ?? [],
+        pin: input.pin,
+      });
     },
-    [persist, state],
+    [pushSnapshot, state],
   );
 
-  const clearData = useCallback(async () => {
-    await clearPortfolio();
-    setState(EMPTY);
-    setRevision((r) => r + 1);
-  }, []);
+  const clearData = useCallback(
+    async (pin?: string) => {
+      const resolved = (pin ?? loadStoredPin()) || null;
+      if (pin) saveStoredPin(pin);
+      try {
+        await deleteLatestSnapshot(resolved);
+        setFromServer(true);
+      } catch (err) {
+        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+          throw err;
+        }
+        // If API unreachable, still clear local cache.
+      }
+      await clearPortfolio();
+      setState(EMPTY);
+      setRevision((r) => r + 1);
+    },
+    [],
+  );
 
   const patchAccount = useCallback(
     async (accountId: string, patch: AccountPatch) => {
@@ -205,10 +321,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (!updated) {
         throw new Error(`Account not found: ${accountId}`);
       }
-      await persist({ ...state, accounts });
+      const next = { ...state, accounts };
+      const latestUpload = [...state.uploads].sort((a, b) =>
+        b.uploaded_at.localeCompare(a.uploaded_at),
+      )[0];
+      if (latestUpload) {
+        await pushSnapshot(next, {
+          cutoffDate: latestUpload.cutoff_date,
+          stageMode: latestUpload.stage_mode,
+          uploadedAt: latestUpload.uploaded_at,
+          filename: latestUpload.filename,
+          warnings: latestUpload.warnings ?? [],
+        });
+      } else {
+        await persistLocal(next);
+      }
       return updated;
     },
-    [persist, state],
+    [persistLocal, pushSnapshot, state],
   );
 
   const value = useMemo<DataContextValue>(
@@ -216,12 +346,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
       ready,
       state,
       revision,
+      fromServer,
+      uploadPinRequired,
       uploadWorkbook,
       updateSettings,
       clearData,
       patchAccount,
     }),
-    [ready, state, revision, uploadWorkbook, updateSettings, clearData, patchAccount],
+    [
+      ready,
+      state,
+      revision,
+      fromServer,
+      uploadPinRequired,
+      uploadWorkbook,
+      updateSettings,
+      clearData,
+      patchAccount,
+    ],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { ApiError } from '../api/client';
 
 type Props = {
   isLoading: boolean;
@@ -24,18 +23,14 @@ export function QueryState({
     return (
       <div className="state-box" role="status">
         <h2>Loading…</h2>
-        <p>Fetching data from the server.</p>
+        <p>Reading local portfolio data.</p>
       </div>
     );
   }
 
   if (isError) {
     const message =
-      error instanceof ApiError
-        ? error.message
-        : error instanceof Error
-          ? error.message
-          : 'Could not load the data.';
+      error instanceof Error ? error.message : 'Could not load the data.';
     return (
       <div className="state-box error" role="alert">
         <h2>Error</h2>

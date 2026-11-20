@@ -1,21 +1,18 @@
 import { NavLink } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { BASES } from '@zerorez/shared';
-import { fetchBases } from '../api/client';
+import { BASES, listBases } from '@zerorez/shared';
+import { useData } from '../data/DataContext';
 import { formatCompactK } from '../lib/format';
 
 type Props = {
   onNavigate?: () => void;
-  canUpload?: boolean;
 };
 
-export function Sidebar({ onNavigate, canUpload = true }: Props) {
-  const basesQuery = useQuery({
-    queryKey: ['bases', 'all'],
-    queryFn: () => fetchBases('all'),
-  });
+export function Sidebar({ onNavigate }: Props) {
+  const { state, ready, revision } = useData();
+  const basesData = ready ? listBases(state, 'all') : null;
+  void revision;
 
-  const byId = new Map((basesQuery.data?.bases ?? []).map((b) => [b.id, b]));
+  const byId = new Map((basesData?.bases ?? []).map((b) => [b.id, b]));
 
   return (
     <aside className="sidebar" id="side">
@@ -38,15 +35,13 @@ export function Sidebar({ onNavigate, canUpload = true }: Props) {
       >
         <span>Dashboard</span>
       </NavLink>
-      {canUpload ? (
-        <NavLink
-          to="/cargar"
-          className={({ isActive }) => `nav-item${isActive ? ' on' : ''}`}
-          onClick={onNavigate}
-        >
-          <span>Upload data</span>
-        </NavLink>
-      ) : null}
+      <NavLink
+        to="/upload"
+        className={({ isActive }) => `nav-item${isActive ? ' on' : ''}`}
+        onClick={onNavigate}
+      >
+        <span>Upload data</span>
+      </NavLink>
 
       <h3>Bases</h3>
       {BASES.map((base) => {

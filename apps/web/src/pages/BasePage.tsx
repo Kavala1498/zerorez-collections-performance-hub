@@ -1,12 +1,13 @@
-import { useQuery } from '@tanstack/react-query';
+import {
+  getBaseAnalytics,
+  getCriticalStageAlerts,
+  getTrends,
+  listBaseAccounts,
+  type AccountWithStage,
+  type StageBucket,
+} from '@zerorez/shared';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  fetchAlerts,
-  fetchBaseAccounts,
-  fetchBaseAnalytics,
-  fetchBaseTrends,
-} from '../api/client';
 import { AccountEditForm } from '../components/AccountEditForm';
 import { AlertsBanner } from '../components/AlertsBanner';
 import { InsightsCard } from '../components/InsightsCard';
@@ -15,7 +16,7 @@ import { QueryState } from '../components/QueryState';
 import { SegmentToggle } from '../components/SegmentToggle';
 import { StageStack } from '../components/StageStack';
 import { TrendsChart } from '../components/TrendsChart';
-import { useAuth } from '../auth/AuthContext';
+import { useData } from '../data/DataContext';
 import { useSegment } from '../hooks/useSegment';
 import {
   accountSegmentLabel,
@@ -23,7 +24,6 @@ import {
   formatMoney0,
   formatPercent,
 } from '../lib/format';
-import type { AccountWithStage, StageBucket } from '../api/types';
 
 function SegmentBars({
   title,
@@ -63,36 +63,29 @@ export function BasePage() {
   const { id = '' } = useParams();
   const [segment, setSegment] = useSegment();
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { state, ready, revision } = useData();
   const baseId = decodeURIComponent(id);
   const [editing, setEditing] = useState<AccountWithStage | null>(null);
+  void revision;
 
-  const analytics = useQuery({
-    queryKey: ['base-analytics', baseId, segment],
-    queryFn: () => fetchBaseAnalytics(baseId, segment),
-    enabled: !!baseId,
-  });
+  let data = null;
+  let accountsList: AccountWithStage[] = [];
+  let trends = null;
+  let alerts = null;
+  let loadError: Error | null = null;
 
-  const accounts = useQuery({
-    queryKey: ['base-accounts', baseId, 'all'],
-    queryFn: () => fetchBaseAccounts(baseId, 'all'),
-    enabled: !!baseId,
-  });
+  if (ready && baseId) {
+    try {
+      data = getBaseAnalytics(state, baseId, segment);
+      accountsList = listBaseAccounts(state, baseId, 'all').accounts;
+      trends = getTrends(state, segment, baseId);
+      alerts = getCriticalStageAlerts(state, segment, baseId);
+    } catch (err) {
+      loadError = err instanceof Error ? err : new Error('Failed to load base');
+    }
+  }
 
-  const trends = useQuery({
-    queryKey: ['base-trends', baseId, segment],
-    queryFn: () => fetchBaseTrends(baseId, segment),
-    enabled: !!baseId,
-  });
-
-  const alerts = useQuery({
-    queryKey: ['alerts', segment, baseId],
-    queryFn: () => fetchAlerts(segment, baseId),
-    enabled: !!baseId,
-  });
-
-  const data = analytics.data;
-  const openAccounts = (accounts.data?.accounts ?? []).filter((a) => a.stage != null);
+  const openAccounts = accountsList.filter((a) => a.stage != null);
   const topAccounts = openAccounts.slice(0, 15);
 
   const isEmpty =
@@ -100,9 +93,9 @@ export function BasePage() {
 
   return (
     <QueryState
-      isLoading={analytics.isLoading}
-      isError={analytics.isError}
-      error={analytics.error}
+      isLoading={!ready}
+      isError={!!loadError}
+      error={loadError}
       isEmpty={isEmpty}
       emptyTitle="No data for this base"
       emptyMessage="Upload an Excel file with accounts for this base to see analytics."
@@ -119,7 +112,7 @@ export function BasePage() {
             </div>
           </div>
 
-          <AlertsBanner data={alerts.data} hideBase />
+          <AlertsBanner data={alerts ?? undefined} hideBase />
 
           <KpiCards
             items={[
@@ -140,7 +133,7 @@ export function BasePage() {
                 value: formatPercent(data.kpis.companyShare),
               },
               {
-                label: 'Over 45 days',
+                label: '49+ days',
                 value: formatPercent(data.kpis.over45Share, 0),
                 hint: formatMoney0(data.kpis.over45Amount),
               },
@@ -151,7 +144,7 @@ export function BasePage() {
 
           <TrendsChart
             title={`Past-due trend · ${data.base.id}`}
-            points={trends.data?.points ?? []}
+            points={trends?.points ?? []}
           />
 
           <div className="card">
@@ -180,12 +173,11 @@ export function BasePage() {
               {editing ? (
                 <AccountEditForm
                   account={editing}
-                  baseId={baseId}
                   onClose={() => setEditing(null)}
                 />
               ) : null}
               <div className="wrap">
-                <table className="data" style={{ minWidth: isAdmin ? 780 : 640 }}>
+                <table className="data" style={{ minWidth: 780 }}>
                   <thead>
                     <tr>
                       <th style={{ textAlign: 'left' }}>Client</th>
@@ -195,7 +187,7 @@ export function BasePage() {
                       <th>Status</th>
                       <th>Next action</th>
                       <th>Last contact</th>
-                      {isAdmin ? <th>Edit</th> : null}
+                      <th>Edit</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -246,29 +238,25 @@ export function BasePage() {
                             ) : null}
                           </td>
                           <td>{a.last_contacted || 'No record'}</td>
-                          {isAdmin ? (
-                            <td>
-                              <button
-                                type="button"
-                                onClick={() => setEditing(a)}
-                                aria-label={`Edit ${a.client_name}`}
-                              >
-                                Edit
-                              </button>
-                            </td>
-                          ) : null}
+                          <td>
+                            <button
+                              type="button"
+                              onClick={() => setEditing(a)}
+                              aria-label={`Edit ${a.client_name}`}
+                            >
+                              Edit
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
-              {isAdmin ? (
-                <p className="hint">
-                  Admins can edit status, next action, notes, and last contacted. Changes are
-                  audited.
-                </p>
-              ) : null}
+              <p className="hint">
+                Edits stay in this browser only (IndexedDB). Re-uploading preserves status / next
+                action / notes when Excel cells are empty.
+              </p>
             </div>
           ) : null}
 

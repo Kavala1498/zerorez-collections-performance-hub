@@ -4,13 +4,13 @@ globs:
 alwaysApply: true
 ---
 
-# Zerorez AR CRM
+# Zerorez Collections Performance Hub
 
-- Project: Zerorez AR CRM (monorepo pnpm: apps/web, apps/api, packages/shared).
-- Language: Strict TypeScript across the repo. UI copy in Spanish; code, identifiers, and commits in English.
-- Backend architecture: Controller -> Service -> Repository. Controllers only validate (zod) and delegate. Business logic lives in services and packages/shared. Only repositories talk to Google Sheets.
-- Never write Sheets cells one-by-one: read and write in bulk and use a TTL cache.
+- Project: standalone browser AR dashboard (monorepo pnpm: apps/web, packages/shared).
+- Language: Strict TypeScript across the repo. UI copy in English; code, identifiers, and commits in English.
+- No Google Sheets, googleapis, Workspace OAuth, or backend required. Excel is parsed in the browser; state persists in IndexedDB.
 - Delinquency stages and insights are calculated only with packages/shared functions.
+- Stage windows: 0–14, 15–29, 30–48, 49–63, 64+.
 - Do not log or print customer PII. Do not commit credentials or real Excel files.
 - Every new business rule ships with a Vitest test.
-- Design: follow reference/zerorez-crm.html (colors, hierarchy, copy).
+- Design: follow reference/zerorez-crm.html (colors, hierarchy, copy). Light/dark themes.

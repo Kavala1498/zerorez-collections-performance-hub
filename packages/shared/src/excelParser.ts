@@ -1,5 +1,7 @@
 import ExcelJS from 'exceljs';
-import { normalizeStatus, resolveBaseId, type Account, type Segment } from '@zerorez/shared';
+import { resolveBaseId } from './bases.js';
+import { normalizeStatus } from './status.js';
+import type { Account, Segment } from './types.js';
 
 export type ParseStats = {
   sheetsTotal: number;
@@ -144,23 +146,21 @@ function rowValues(row: ExcelJS.Row, colCount: number): unknown[] {
   return values;
 }
 
+function toUint8Array(buffer: ArrayBuffer | Uint8Array): Uint8Array {
+  if (buffer instanceof Uint8Array) return buffer;
+  return new Uint8Array(buffer);
+}
+
 /**
  * Parse a Zerorez collections .xlsx buffer into standardized accounts.
- * Implements arquitectura rules 1–5 and 9 (tabs, segments, headers, validity,
- * dedupe, next_action_date text handling). Stage calculation is out of scope.
+ * Works in browser (ArrayBuffer) and Node (Buffer / Uint8Array).
+ * Stage calculation is out of scope — callers use cutoff + stage mode.
  */
 export async function parseWorkbook(
-  buffer: Buffer | ArrayBuffer | Uint8Array,
+  buffer: ArrayBuffer | Uint8Array,
 ): Promise<ParseWorkbookResult> {
   const workbook = new ExcelJS.Workbook();
-  const data =
-    buffer instanceof ArrayBuffer
-      ? Buffer.from(buffer)
-      : Buffer.isBuffer(buffer)
-        ? buffer
-        : Buffer.from(buffer);
-
-  // exceljs typings accept Buffer via ArrayBuffer-like input.
+  const data = toUint8Array(buffer);
   await workbook.xlsx.load(data as unknown as ExcelJS.Buffer);
 
   const accounts: Account[] = [];
@@ -286,6 +286,7 @@ export async function parseWorkbook(
         invoice_url: cellToString(getByHeader(headers, values, 'invoiceurl')),
         technician: cellToString(getByHeader(headers, values, 'technician')),
         status: normalized ?? statusRaw,
+        aging_bucket: cellToString(getByHeader(headers, values, 'agingbucket')),
         accountability: cellToString(getByHeader(headers, values, 'accountability')),
         terms: cellToString(getByHeader(headers, values, 'terms')),
         last_contacted: lastContacted,

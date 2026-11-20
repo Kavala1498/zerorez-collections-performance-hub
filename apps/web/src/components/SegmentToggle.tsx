@@ -1,4 +1,4 @@
-import type { AnalyticsSegment } from '../api/types';
+import type { AnalyticsSegment } from '@zerorez/shared';
 
 const OPTIONS: Array<{ value: AnalyticsSegment; label: string }> = [
   { value: 'all', label: 'All' },

@@ -1,4 +1,4 @@
-import type { StageBucket } from '../api/types';
+import type { StageBucket } from '@zerorez/shared';
 import { formatMoney0 } from '../lib/format';
 
 type Props = {

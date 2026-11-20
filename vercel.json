@@ -1,0 +1,6 @@
+{
+  "buildCommand": "pnpm install && pnpm --filter @zerorez/shared build && pnpm --filter @zerorez/web build",
+  "outputDirectory": "apps/web/dist",
+  "installCommand": "pnpm install",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}

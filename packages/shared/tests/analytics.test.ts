@@ -1,14 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import type { Account, Snapshot, Upload } from '@zerorez/shared';
-import { InMemoryAccountsRepository } from '../src/repositories/InMemoryAccountsRepository.js';
+import type { Account, Snapshot, Upload } from '../src/types.js';
 import {
-  AnalyticsService,
   SEVERITY_COLORS,
   daysBetween,
+  getBaseAnalytics,
+  getDashboard,
+  getTrends,
+  listBaseAccounts,
   severityFromCriticalShare,
-} from '../src/services/AnalyticsService.js';
+} from '../src/analytics.js';
+import type { PortfolioState } from '../src/analytics.js';
 
-function account(partial: Partial<Account> & Pick<Account, 'id' | 'base' | 'segment' | 'client_name' | 'service_date' | 'amount_due'>): Account {
+function account(
+  partial: Partial<Account> &
+    Pick<Account, 'id' | 'base' | 'segment' | 'client_name' | 'service_date' | 'amount_due'>,
+): Account {
   return {
     paid_amount: 0,
     resolved_at: null,
@@ -18,13 +24,12 @@ function account(partial: Partial<Account> & Pick<Account, 'id' | 'base' | 'segm
   };
 }
 
-function seedRepo(opts?: {
+function seed(opts?: {
   accounts?: Account[];
   uploads?: Upload[];
   snapshots?: Snapshot[];
-}): InMemoryAccountsRepository {
-  const repo = new InMemoryAccountsRepository();
-  repo.seed({
+}): PortfolioState {
+  return {
     accounts: opts?.accounts ?? [],
     uploads: opts?.uploads ?? [
       {
@@ -40,8 +45,7 @@ function seedRepo(opts?: {
       },
     ],
     snapshots: opts?.snapshots ?? [],
-  });
-  return repo;
+  };
 }
 
 describe('severityFromCriticalShare', () => {
@@ -64,12 +68,12 @@ describe('daysBetween', () => {
   });
 });
 
-describe('AnalyticsService', () => {
-  it('computes dashboard KPIs, stages, severity, and insights', async () => {
+describe('analytics (pure)', () => {
+  it('computes dashboard KPIs, stages, severity, and insights', () => {
     // cutoff 2026-11-18
-    // Dallas C: 15 DPD → stage 1 ($1000); 50 DPD → stage 4 ($4000) → critical share 80%
+    // Dallas C: 15 DPD → stage 2 ($1000); 50 DPD → stage 4 ($4000) → critical share 80%
     // Phoenix R: 20 DPD → stage 2 ($500)
-    const repo = seedRepo({
+    const state = seed({
       accounts: [
         account({
           id: 'Dallas|1',
@@ -85,7 +89,7 @@ describe('AnalyticsService', () => {
           base: 'Dallas',
           segment: 'C',
           client_name: 'Small Co',
-          service_date: '2026-11-03', // 15 days
+          service_date: '2026-11-03', // 15 days → stage 2
           amount_due: 1000,
         }),
         account({
@@ -108,15 +112,14 @@ describe('AnalyticsService', () => {
         }),
       ],
     });
-    const service = new AnalyticsService(repo);
 
-    const dash = await service.getDashboard('all');
+    const dash = getDashboard(state, 'all');
     expect(dash.cutoffDate).toBe('2026-11-18');
     expect(dash.kpis.overdueAmount).toBe(5500);
     expect(dash.kpis.overdueAccounts).toBe(3);
     expect(dash.kpis.over45Amount).toBe(4000);
     expect(dash.kpis.highestBase?.id).toBe('Dallas');
-    expect(dash.stages.find((s) => s.id === 1)?.accounts).toBe(1);
+    expect(dash.stages.find((s) => s.id === 2)?.accounts).toBe(2);
     expect(dash.stages.find((s) => s.id === 4)?.amount).toBe(4000);
     expect(dash.insights.length).toBeGreaterThan(0);
 
@@ -128,17 +131,17 @@ describe('AnalyticsService', () => {
     const phoenix = dash.bases.find((b) => b.id === 'Phoenix');
     expect(phoenix?.severity).toBe('ok');
 
-    const commercial = await service.getDashboard('C');
+    const commercial = getDashboard(state, 'C');
     expect(commercial.kpis.overdueAmount).toBe(5000);
     expect(commercial.kpis.overdueAccounts).toBe(2);
 
-    const residential = await service.getDashboard('R');
+    const residential = getDashboard(state, 'R');
     expect(residential.kpis.overdueAmount).toBe(500);
     expect(residential.kpis.overdueAccounts).toBe(1);
   });
 
-  it('returns base analytics ranking and company share', async () => {
-    const repo = seedRepo({
+  it('returns base analytics ranking and company share', () => {
+    const state = seed({
       accounts: [
         account({
           id: 'Dallas|1',
@@ -158,8 +161,7 @@ describe('AnalyticsService', () => {
         }),
       ],
     });
-    const service = new AnalyticsService(repo);
-    const analytics = await service.getBaseAnalytics('Dallas', 'all');
+    const analytics = getBaseAnalytics(state, 'Dallas', 'all');
     expect(analytics.base.id).toBe('Dallas');
     expect(analytics.kpis.overdueAmount).toBe(3000);
     expect(analytics.kpis.rank).toBe(1);
@@ -168,8 +170,8 @@ describe('AnalyticsService', () => {
     expect(analytics.bySegment.C.overdueAmount).toBe(3000);
   });
 
-  it('lists base accounts with stage and ignores resolved', async () => {
-    const repo = seedRepo({
+  it('lists base accounts with stage and ignores resolved', () => {
+    const state = seed({
       accounts: [
         account({
           id: 'SoCal|1',
@@ -190,15 +192,14 @@ describe('AnalyticsService', () => {
         }),
       ],
     });
-    const service = new AnalyticsService(repo);
-    const list = await service.listBaseAccounts('SoCal', 'all');
+    const list = listBaseAccounts(state, 'SoCal', 'all');
     expect(list.accounts).toHaveLength(1);
     expect(list.accounts[0]?.client_name).toBe('Open');
     expect(list.accounts[0]?.stage).toBeGreaterThanOrEqual(1);
   });
 
-  it('aggregates trends from snapshots by upload', async () => {
-    const repo = seedRepo({
+  it('aggregates trends from snapshots by upload', () => {
+    const state = seed({
       uploads: [
         {
           id: 'up-a',
@@ -253,32 +254,25 @@ describe('AnalyticsService', () => {
         },
       ],
     });
-    const service = new AnalyticsService(repo);
-    const all = await service.getTrends('all');
+    const all = getTrends(state, 'all');
     expect(all.points).toHaveLength(2);
     expect(all.points[0]?.cutoffDate).toBe('2026-10-01');
     expect(all.points[1]?.overdueAmount).toBe(325);
 
-    const commercial = await service.getTrends('C');
+    const commercial = getTrends(state, 'C');
     expect(commercial.points[1]?.overdueAmount).toBe(250);
 
-    const dallas = await service.getTrends('all', 'Dallas');
+    const dallas = getTrends(state, 'all', 'Dallas');
     expect(dallas.base?.id).toBe('Dallas');
     expect(dallas.points[1]?.overdueAmount).toBe(250);
   });
 
-  it('throws NOT_FOUND for unknown bases', async () => {
-    const service = new AnalyticsService(seedRepo());
-    await expect(service.getBaseAnalytics('Richmond', 'all')).rejects.toMatchObject({
-      code: 'NOT_FOUND',
-      status: 404,
-    });
+  it('throws for unknown bases', () => {
+    expect(() => getBaseAnalytics(seed(), 'Richmond', 'all')).toThrow(/Unknown base/);
   });
 
-  it('returns empty dashboard when there are no uploads', async () => {
-    const repo = seedRepo({ uploads: [], accounts: [] });
-    const service = new AnalyticsService(repo);
-    const dash = await service.getDashboard('all');
+  it('returns empty dashboard when there are no uploads', () => {
+    const dash = getDashboard(seed({ uploads: [], accounts: [] }), 'all');
     expect(dash.cutoffDate).toBeNull();
     expect(dash.kpis.overdueAmount).toBe(0);
     expect(dash.insights).toEqual([]);

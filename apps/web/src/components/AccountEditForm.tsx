@@ -1,47 +1,40 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ALLOWED_STATUSES, type AllowedStatus } from '@zerorez/shared';
+import { ALLOWED_STATUSES, type AccountWithStage, type AllowedStatus } from '@zerorez/shared';
 import { useState } from 'react';
-import { ApiError, patchAccount } from '../api/client';
-import type { AccountWithStage } from '../api/types';
+import { useData } from '../data/DataContext';
 
 type Props = {
   account: AccountWithStage;
-  baseId: string;
   onClose: () => void;
 };
 
-export function AccountEditForm({ account, baseId, onClose }: Props) {
-  const queryClient = useQueryClient();
+export function AccountEditForm({ account, onClose }: Props) {
+  const { patchAccount } = useData();
   const [status, setStatus] = useState<string>(account.status ?? '');
   const [nextAction, setNextAction] = useState(account.next_action ?? '');
   const [nextActionDate, setNextActionDate] = useState(account.next_action_date ?? '');
   const [notes, setNotes] = useState(account.acc_notes ?? '');
   const [lastContacted, setLastContacted] = useState(account.last_contacted ?? '');
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
-  const mutation = useMutation({
-    mutationFn: () =>
-      patchAccount(account.id, {
+  const onSave = async () => {
+    setPending(true);
+    setError(null);
+    try {
+      await patchAccount(account.id, {
         status: (status || null) as AllowedStatus | null,
         next_action: nextAction.trim() || null,
         next_action_date: nextActionDate.trim() || null,
         notes: notes.trim() || null,
         last_contacted: lastContacted.trim() || null,
-      }),
-    onSuccess: async () => {
-      setError(null);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['base-accounts', baseId] }),
-        queryClient.invalidateQueries({ queryKey: ['base-analytics', baseId] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
-        queryClient.invalidateQueries({ queryKey: ['alerts'] }),
-      ]);
+      });
       onClose();
-    },
-    onError: (err) => {
-      setError(err instanceof ApiError ? err.message : 'Could not save account');
-    },
-  });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save account');
+    } finally {
+      setPending(false);
+    }
+  };
 
   return (
     <div className="account-edit">
@@ -50,12 +43,9 @@ export function AccountEditForm({ account, baseId, onClose }: Props) {
           <strong>{account.client_name}</strong>
           <div className="hint" style={{ margin: 0 }}>
             {account.invoice_number ? `Invoice ${account.invoice_number}` : account.id}
-            {account.updated_by
-              ? ` · last edited by ${account.updated_by}`
-              : null}
           </div>
         </div>
-        <button type="button" onClick={onClose} disabled={mutation.isPending}>
+        <button type="button" onClick={onClose} disabled={pending}>
           Cancel
         </button>
       </div>
@@ -112,13 +102,8 @@ export function AccountEditForm({ account, baseId, onClose }: Props) {
       {error ? <p className="form-error">{error}</p> : null}
 
       <div className="account-edit-actions">
-        <button
-          type="button"
-          className="pri"
-          disabled={mutation.isPending}
-          onClick={() => mutation.mutate()}
-        >
-          {mutation.isPending ? 'Saving…' : 'Save changes'}
+        <button type="button" className="pri" disabled={pending} onClick={() => void onSave()}>
+          {pending ? 'Saving…' : 'Save changes'}
         </button>
       </div>
     </div>

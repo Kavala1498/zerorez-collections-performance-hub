@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseWorkbook } from '../src/parsers/excelParser.js';
+import { parseWorkbook } from '../src/excelParser.js';
 import { buildSyntheticWorkbook } from './fixtures/buildSyntheticWorkbook.js';
 
 describe('parseWorkbook', () => {

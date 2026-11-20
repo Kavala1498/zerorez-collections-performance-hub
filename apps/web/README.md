@@ -18,6 +18,6 @@ pnpm --filter @zerorez/web typecheck
 | `/bases/:id` | Base analytics |
 | `/cargar` | Excel upload + upload history |
 
-UI is Spanish. Theme: light / dark (toggle + `prefers-color-scheme`). Design tokens match `arquitectura` §7 and `reference/zerorez-crm.html`.
+UI is English (matches `reference/zerorez-crm.html` wording). Theme: light / dark (toggle + `prefers-color-scheme`). Design tokens match `arquitectura` §7.
 
 Optional: set `VITE_API_BASE_URL` if the API is not proxied (default uses Vite proxy to `http://localhost:3001`).

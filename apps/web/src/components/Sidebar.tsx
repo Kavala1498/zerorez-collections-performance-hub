@@ -28,7 +28,7 @@ export function Sidebar({ onNavigate }: Props) {
         </div>
       </div>
 
-      <h3>Plataforma</h3>
+      <h3>Platform</h3>
       <NavLink
         to="/"
         end
@@ -42,7 +42,7 @@ export function Sidebar({ onNavigate }: Props) {
         className={({ isActive }) => `nav-item${isActive ? ' on' : ''}`}
         onClick={onNavigate}
       >
-        <span>Cargar datos</span>
+        <span>Upload data</span>
       </NavLink>
 
       <h3>Bases</h3>
@@ -64,7 +64,7 @@ export function Sidebar({ onNavigate }: Props) {
         );
       })}
 
-      <div className="sidebar-by">Desarrollado por Alejandro Torres</div>
+      <div className="sidebar-by">Developed by Alejandro Torres</div>
     </aside>
   );
 }

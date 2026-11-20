@@ -31,7 +31,7 @@ function SegmentBars({
     <div className="card">
       <h2>
         {title} · {formatMoney0(overdueAmount)}{' '}
-        <span className="pill">{overdueAccounts} cuentas</span>
+        <span className="pill">{overdueAccounts} accounts</span>
       </h2>
       {stages.map((x) => (
         <div className="row" key={x.id}>
@@ -81,8 +81,8 @@ export function BasePage() {
       isError={analytics.isError}
       error={analytics.error}
       isEmpty={isEmpty}
-      emptyTitle="Sin datos para esta base"
-      emptyMessage="Carga un Excel con cuentas de esta base para ver analíticas."
+      emptyTitle="No data for this base"
+      emptyMessage="Upload an Excel file with accounts for this base to see analytics."
     >
       {data ? (
         <>
@@ -91,7 +91,7 @@ export function BasePage() {
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
               <SegmentToggle value={segment} onChange={setSegment} />
               <span className="pill">
-                Puesto {data.kpis.rank} de {data.kpis.baseCount} por monto vencido
+                Rank {data.kpis.rank} of {data.kpis.baseCount} by past-due amount
               </span>
             </div>
           </div>
@@ -99,45 +99,45 @@ export function BasePage() {
           <KpiCards
             items={[
               {
-                label: 'Monto vencido',
+                label: 'Past-due amount',
                 value: formatMoney0(data.kpis.overdueAmount),
               },
               {
-                label: 'Cuentas vencidas',
+                label: 'Past-due accounts',
                 value: String(data.kpis.overdueAccounts),
               },
               {
-                label: 'Promedio por cuenta',
+                label: 'Average per account',
                 value: formatMoney0(data.kpis.averagePerAccount),
               },
               {
-                label: 'Peso sobre el total',
+                label: 'Share of company total',
                 value: formatPercent(data.kpis.companyShare),
               },
               {
-                label: 'Más de 45 días',
+                label: 'Over 45 days',
                 value: formatPercent(data.kpis.over45Share, 0),
                 hint: formatMoney0(data.kpis.over45Amount),
               },
             ]}
           />
 
-          <InsightsCard title={`Insights · ${data.base.name}`} insights={data.insights} />
+          <InsightsCard title={`Insights for ${data.base.name}`} insights={data.insights} />
 
           <div className="card">
-            <h2>Distribución por etapa</h2>
+            <h2>Stage distribution</h2>
             <StageStack stages={data.stages} showAccounts />
           </div>
 
           <div className="two">
             <SegmentBars
-              title="Comercial"
+              title="Commercial"
               overdueAmount={data.bySegment.C.overdueAmount}
               overdueAccounts={data.bySegment.C.overdueAccounts}
               stages={data.bySegment.C.stages}
             />
             <SegmentBars
-              title="Residencial"
+              title="Residential"
               overdueAmount={data.bySegment.R.overdueAmount}
               overdueAccounts={data.bySegment.R.overdueAccounts}
               stages={data.bySegment.R.stages}
@@ -146,17 +146,17 @@ export function BasePage() {
 
           {topAccounts.length > 0 ? (
             <div className="card">
-              <h2>Cuentas más grandes</h2>
+              <h2>Largest accounts</h2>
               <div className="wrap">
                 <table className="data" style={{ minWidth: 640 }}>
                   <thead>
                     <tr>
-                      <th style={{ textAlign: 'left' }}>Cliente</th>
-                      <th>Tipo</th>
-                      <th>Monto</th>
-                      <th>Etapa</th>
-                      <th>Estado</th>
-                      <th>Último contacto</th>
+                      <th style={{ textAlign: 'left' }}>Client</th>
+                      <th>Type</th>
+                      <th>Amount</th>
+                      <th>Stage</th>
+                      <th>Status</th>
+                      <th>Last contact</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -193,7 +193,7 @@ export function BasePage() {
                             {stage?.label ?? '—'}
                           </td>
                           <td>{a.status || '—'}</td>
-                          <td>{a.last_contacted || 'Sin registro'}</td>
+                          <td>{a.last_contacted || 'No record'}</td>
                         </tr>
                       );
                     })}
@@ -204,7 +204,7 @@ export function BasePage() {
           ) : null}
 
           <div className="card">
-            <h2>Comparación entre bases</h2>
+            <h2>Comparison across bases</h2>
             {data.ranking.map((row) => {
               const max = data.ranking[0]?.overdueAmount || 1;
               const isCurrent = row.id === data.base.id;

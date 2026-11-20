@@ -22,19 +22,19 @@ export function UploadPage() {
 
   const mutation = useMutation({
     mutationFn: () => {
-      if (!file) throw new Error('Selecciona un archivo .xlsx');
+      if (!file) throw new Error('Choose a .xlsx file');
       return uploadWorkbook({ file, cutoffDate, stageMode });
     },
     onSuccess: (result) => {
       void queryClient.invalidateQueries();
       setToast(
-        `Carga OK: ${result.rowsLoaded} filas · ${result.accountsOpen} abiertas · ${result.warnings.length} avisos`,
+        `Loaded ${result.rowsLoaded} rows · ${result.accountsOpen} open · ${result.warnings.length} warning(s)`,
       );
       setTimeout(() => setToast(null), 3200);
       setFile(null);
     },
     onError: (err) => {
-      setToast(err instanceof Error ? err.message : 'Error al cargar');
+      setToast(err instanceof Error ? err.message : 'Upload failed');
       setTimeout(() => setToast(null), 3200);
     },
   });
@@ -49,25 +49,25 @@ export function UploadPage() {
   return (
     <>
       <div className="card">
-        <h2>Cargar el Excel de cobranza</h2>
+        <h2>Upload the collections Excel file</h2>
         <form onSubmit={onSubmit}>
           <div className="drop">
-            <b>Elige tu archivo .xlsx</b>
+            <b>Choose your .xlsx file</b>
             <span>
-              Se leen las pestañas de las 14 bases (tablas Residencial y Comercial). El resto
-              se ignora con un aviso. El procesamiento ocurre en el servidor.
+              The tabs for the 14 bases are read (Residential and Commercial tables); all other
+              tabs are ignored with a warning. Processing happens on the server.
             </span>
             <input
               type="file"
               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
-            {file ? <span>Seleccionado: {file.name}</span> : null}
+            {file ? <span>Selected: {file.name}</span> : null}
           </div>
 
           <div className="opts">
             <label className="field">
-              Fecha de corte
+              Cutoff date
               <input
                 type="date"
                 value={cutoffDate}
@@ -76,51 +76,51 @@ export function UploadPage() {
               />
             </label>
             <label className="field">
-              Cómo calcular la etapa
+              How to calculate the stage
               <select
                 value={stageMode}
                 onChange={(e) => setStageMode(e.target.value as 'date' | 'label')}
               >
-                <option value="date">Por fecha de servicio</option>
-                <option value="label">Usar columna Aging bucket</option>
+                <option value="date">By service date</option>
+                <option value="label">Use the Aging bucket column</option>
               </select>
             </label>
           </div>
 
           <p className="hint">
-            Por fecha de servicio: ventanas 0–15, 16–30, 31–45, 46–60 y 61+ días respecto a la
-            fecha de corte.
+            By service date, using dashboard ranges: 0–15, 16–30, 31–45, 46–60 and 61+ days before
+            the cutoff date.
           </p>
 
           <div style={{ marginTop: 14 }}>
             <button className="pri" type="submit" disabled={!file || mutation.isPending}>
-              {mutation.isPending ? 'Subiendo…' : 'Subir archivo'}
+              {mutation.isPending ? 'Uploading…' : 'Upload file'}
             </button>
           </div>
         </form>
       </div>
 
       <div className="card">
-        <h2>Historial de cargas</h2>
+        <h2>Upload history</h2>
         <QueryState
           isLoading={uploads.isLoading}
           isError={uploads.isError}
           error={uploads.error}
           isEmpty={!uploads.isLoading && (uploads.data?.uploads.length ?? 0) === 0}
-          emptyTitle="Sin cargas aún"
-          emptyMessage="Cuando subas un Excel aparecerá aquí el historial."
+          emptyTitle="No uploads yet"
+          emptyMessage="When you upload an Excel file, it will appear here."
         >
           {uploads.data ? (
             <div className="wrap">
               <table className="data" style={{ minWidth: 720 }}>
                 <thead>
                   <tr>
-                    <th style={{ textAlign: 'left' }}>Archivo</th>
-                    <th>Corte</th>
-                    <th>Modo</th>
-                    <th>Leídas</th>
-                    <th>Cargadas</th>
-                    <th>Fecha</th>
+                    <th style={{ textAlign: 'left' }}>File</th>
+                    <th>Cutoff</th>
+                    <th>Mode</th>
+                    <th>Read</th>
+                    <th>Loaded</th>
+                    <th>Uploaded</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -128,10 +128,10 @@ export function UploadPage() {
                     <tr key={u.id} style={{ cursor: 'default' }}>
                       <td className="n">{u.filename}</td>
                       <td>{u.cutoff_date}</td>
-                      <td>{u.stage_mode === 'date' ? 'Fecha' : 'Aging'}</td>
+                      <td>{u.stage_mode === 'date' ? 'Date' : 'Aging'}</td>
                       <td>{u.rows_read}</td>
                       <td>{u.rows_loaded}</td>
-                      <td>{new Date(u.uploaded_at).toLocaleString('es-US')}</td>
+                      <td>{new Date(u.uploaded_at).toLocaleString('en-US')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -141,10 +141,8 @@ export function UploadPage() {
         </QueryState>
         {latest ? (
           <p className="hint">
-            Última carga: {latest.filename} · corte {latest.cutoff_date}
-            {latest.warnings.length
-              ? ` · ${latest.warnings.length} aviso(s)`
-              : ''}
+            Latest: {latest.filename} · cutoff {latest.cutoff_date}
+            {latest.warnings.length ? ` · ${latest.warnings.length} warning(s)` : ''}
           </p>
         ) : null}
       </div>

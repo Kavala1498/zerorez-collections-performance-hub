@@ -31,8 +31,8 @@ export function DashboardPage() {
       isError={query.isError}
       error={query.error}
       isEmpty={isEmpty}
-      emptyTitle="Sin datos cargados"
-      emptyMessage="Ve a Cargar datos y sube un Excel de cobranza para poblar el dashboard."
+      emptyTitle="No data loaded"
+      emptyMessage="Go to Upload data and upload a collections Excel file to populate the dashboard."
     >
       {data ? (
         <>
@@ -40,28 +40,28 @@ export function DashboardPage() {
             <SegmentToggle value={segment} onChange={setSegment} />
             <span className="pill">
               {data.cutoffDate
-                ? `Fecha de corte: ${data.cutoffDate} · base ${data.amountBasis}`
-                : 'Sin cargas'}
+                ? `Cutoff date: ${data.cutoffDate} · basis ${data.amountBasis}`
+                : 'No uploads'}
             </span>
           </div>
 
           <KpiCards
             items={[
               {
-                label: 'Monto total vencido',
+                label: 'Total past-due amount',
                 value: formatMoney0(data.kpis.overdueAmount),
               },
               {
-                label: 'Cuentas vencidas',
+                label: 'Past-due accounts',
                 value: String(data.kpis.overdueAccounts),
               },
               {
-                label: 'Más de 45 días (etapa crítica)',
+                label: 'Over 45 days (critical stage)',
                 value: formatMoney0(data.kpis.over45Amount),
-                hint: `${formatPercent(data.kpis.over45Share)} del portafolio`,
+                hint: `${formatPercent(data.kpis.over45Share)} of portfolio`,
               },
               {
-                label: 'Base con mayor saldo',
+                label: 'Highest-balance base',
                 value: data.kpis.highestBase?.name ?? '—',
                 hint: data.kpis.highestBase
                   ? formatMoney0(data.kpis.highestBase.amount)
@@ -70,15 +70,15 @@ export function DashboardPage() {
             ]}
           />
 
-          <InsightsCard title="Insights del portafolio" insights={data.insights} />
+          <InsightsCard title="Portfolio insights" insights={data.insights} />
 
           <div className="card">
-            <h2>Portafolio por etapa de morosidad</h2>
+            <h2>Portfolio by delinquency stage</h2>
             <StageStack stages={data.stages} />
           </div>
 
           <div className="card">
-            <h2>Detalle por base</h2>
+            <h2>Detail by base</h2>
             <div className="wrap">
               <table className="data">
                 <thead>
@@ -90,11 +90,11 @@ export function DashboardPage() {
                         style={{ background: st.color, color: '#10202c' }}
                       >
                         {st.label}
-                        <small>cuentas · monto</small>
+                        <small>accounts · amount</small>
                       </th>
                     ))}
-                    <th>Total cuentas</th>
-                    <th>Total monto</th>
+                    <th>Total accounts</th>
+                    <th>Total amount</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -137,7 +137,7 @@ export function DashboardPage() {
                 </tfoot>
               </table>
             </div>
-            <p className="hint">Haz clic en una base para abrir su analítica.</p>
+            <p className="hint">Click a base to open its analytics.</p>
           </div>
         </>
       ) : null}

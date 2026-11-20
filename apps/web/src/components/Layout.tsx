@@ -5,7 +5,7 @@ import { useTheme } from '../hooks/useTheme';
 import { Sidebar } from './Sidebar';
 
 function crumbLabel(pathname: string, baseId?: string): string {
-  if (pathname.startsWith('/cargar')) return 'Cargar datos';
+  if (pathname.startsWith('/cargar')) return 'Upload data';
   if (pathname.startsWith('/bases/') && baseId) {
     return BASES.find((b) => b.id === baseId)?.name ?? baseId;
   }
@@ -27,7 +27,7 @@ export function Layout() {
           <button
             id="menu"
             type="button"
-            aria-label="Menú"
+            aria-label="Menu"
             onClick={() => setOpen((v) => !v)}
           >
             ☰
@@ -38,13 +38,13 @@ export function Layout() {
           <div className="topbar-actions">
             <button
               type="button"
-              aria-label={resolved === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+              aria-label={resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
               onClick={toggle}
-              title={resolved === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+              title={resolved === 'dark' ? 'Light mode' : 'Dark mode'}
             >
-              {resolved === 'dark' ? 'Claro' : 'Oscuro'}
+              {resolved === 'dark' ? 'Light' : 'Dark'}
             </button>
-            <span className="by2">Desarrollado por Alejandro Torres</span>
+            <span className="by2">Developed by Alejandro Torres</span>
           </div>
         </header>
         <main className="page">

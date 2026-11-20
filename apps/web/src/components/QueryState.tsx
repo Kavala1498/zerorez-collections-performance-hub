@@ -16,15 +16,15 @@ export function QueryState({
   isError,
   error,
   isEmpty = false,
-  emptyTitle = 'Sin datos',
-  emptyMessage = 'Carga un archivo Excel para ver el dashboard.',
+  emptyTitle = 'No data',
+  emptyMessage = 'Upload an Excel file to populate the dashboard.',
   children,
 }: Props) {
   if (isLoading) {
     return (
       <div className="state-box" role="status">
-        <h2>Cargando…</h2>
-        <p>Obteniendo datos del servidor.</p>
+        <h2>Loading…</h2>
+        <p>Fetching data from the server.</p>
       </div>
     );
   }
@@ -35,7 +35,7 @@ export function QueryState({
         ? error.message
         : error instanceof Error
           ? error.message
-          : 'No se pudo cargar la información.';
+          : 'Could not load the data.';
     return (
       <div className="state-box error" role="alert">
         <h2>Error</h2>

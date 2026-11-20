@@ -33,7 +33,7 @@ export function StageStack({ stages, showAccounts = false }: Props) {
             <i style={{ background: x.color }} />
             <div>
               <b>{x.label}</b> · {formatMoney0(x.amount)}
-              {showAccounts ? ` · ${x.accounts} cuentas` : null}
+              {showAccounts ? ` · ${x.accounts} accounts` : null}
               <em>{x.responsibleAction}</em>
             </div>
           </div>

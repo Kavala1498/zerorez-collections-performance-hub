@@ -26,11 +26,11 @@ export function formatPercent(share: number, digits = 1): string {
 }
 
 export function segmentLabel(seg: 'all' | 'C' | 'R'): string {
-  if (seg === 'C') return 'Comercial';
-  if (seg === 'R') return 'Residencial';
-  return 'Todos';
+  if (seg === 'C') return 'Commercial';
+  if (seg === 'R') return 'Residential';
+  return 'All';
 }
 
 export function accountSegmentLabel(seg: 'C' | 'R'): string {
-  return seg === 'C' ? 'Comercial' : 'Residencial';
+  return seg === 'C' ? 'Commercial' : 'Residential';
 }

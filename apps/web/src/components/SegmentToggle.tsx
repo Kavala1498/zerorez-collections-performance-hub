@@ -1,9 +1,9 @@
 import type { AnalyticsSegment } from '../api/types';
 
 const OPTIONS: Array<{ value: AnalyticsSegment; label: string }> = [
-  { value: 'all', label: 'Todos' },
-  { value: 'C', label: 'Comercial' },
-  { value: 'R', label: 'Residencial' },
+  { value: 'all', label: 'All' },
+  { value: 'C', label: 'Commercial' },
+  { value: 'R', label: 'Residential' },
 ];
 
 type Props = {
@@ -13,7 +13,7 @@ type Props = {
 
 export function SegmentToggle({ value, onChange }: Props) {
   return (
-    <div className="seg" role="group" aria-label="Segmento">
+    <div className="seg" role="group" aria-label="Segment">
       {OPTIONS.map((opt) => (
         <button
           key={opt.value}

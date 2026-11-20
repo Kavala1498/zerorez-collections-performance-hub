@@ -36,7 +36,7 @@ async function parseJson<T>(res: Response): Promise<T> {
     }
   }
   if (!res.ok) {
-    throw new ApiError(res.status, body as ApiErrorBody | null, res.statusText || 'Error de red');
+    throw new ApiError(res.status, body as ApiErrorBody | null, res.statusText || 'Network error');
   }
   return body as T;
 }

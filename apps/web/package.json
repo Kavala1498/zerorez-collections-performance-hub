@@ -1,0 +1,10 @@
+{
+  "name": "@zerorez/web",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Zerorez Collections Performance Hub web app (Phase 5)",
+  "scripts": {
+    "build": "echo \"web placeholder — implement in Phase 5\"",
+    "typecheck": "echo \"web placeholder — no sources yet\""
+  }
+}

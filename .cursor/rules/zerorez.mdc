@@ -1,0 +1,16 @@
+---
+description: Zerorez AR CRM project rules
+globs:
+alwaysApply: true
+---
+
+# Zerorez AR CRM
+
+- Project: Zerorez AR CRM (monorepo pnpm: apps/web, apps/api, packages/shared).
+- Language: Strict TypeScript across the repo. UI copy in Spanish; code, identifiers, and commits in English.
+- Backend architecture: Controller -> Service -> Repository. Controllers only validate (zod) and delegate. Business logic lives in services and packages/shared. Only repositories talk to Google Sheets.
+- Never write Sheets cells one-by-one: read and write in bulk and use a TTL cache.
+- Delinquency stages and insights are calculated only with packages/shared functions.
+- Do not log or print customer PII. Do not commit credentials or real Excel files.
+- Every new business rule ships with a Vitest test.
+- Design: follow reference/zerorez-crm.html (colors, hierarchy, copy).

@@ -1,11 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchBaseAccounts, fetchBaseAnalytics } from '../api/client';
+import {
+  fetchAlerts,
+  fetchBaseAccounts,
+  fetchBaseAnalytics,
+  fetchBaseTrends,
+} from '../api/client';
+import { AccountEditForm } from '../components/AccountEditForm';
+import { AlertsBanner } from '../components/AlertsBanner';
 import { InsightsCard } from '../components/InsightsCard';
 import { KpiCards } from '../components/KpiCards';
 import { QueryState } from '../components/QueryState';
 import { SegmentToggle } from '../components/SegmentToggle';
 import { StageStack } from '../components/StageStack';
+import { TrendsChart } from '../components/TrendsChart';
+import { useAuth } from '../auth/AuthContext';
 import { useSegment } from '../hooks/useSegment';
 import {
   accountSegmentLabel,
@@ -13,7 +23,7 @@ import {
   formatMoney0,
   formatPercent,
 } from '../lib/format';
-import type { StageBucket } from '../api/types';
+import type { AccountWithStage, StageBucket } from '../api/types';
 
 function SegmentBars({
   title,
@@ -53,7 +63,9 @@ export function BasePage() {
   const { id = '' } = useParams();
   const [segment, setSegment] = useSegment();
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const baseId = decodeURIComponent(id);
+  const [editing, setEditing] = useState<AccountWithStage | null>(null);
 
   const analytics = useQuery({
     queryKey: ['base-analytics', baseId, segment],
@@ -67,10 +79,21 @@ export function BasePage() {
     enabled: !!baseId,
   });
 
+  const trends = useQuery({
+    queryKey: ['base-trends', baseId, segment],
+    queryFn: () => fetchBaseTrends(baseId, segment),
+    enabled: !!baseId,
+  });
+
+  const alerts = useQuery({
+    queryKey: ['alerts', segment, baseId],
+    queryFn: () => fetchAlerts(segment, baseId),
+    enabled: !!baseId,
+  });
+
   const data = analytics.data;
-  const topAccounts = (accounts.data?.accounts ?? [])
-    .filter((a) => a.stage != null)
-    .slice(0, 10);
+  const openAccounts = (accounts.data?.accounts ?? []).filter((a) => a.stage != null);
+  const topAccounts = openAccounts.slice(0, 15);
 
   const isEmpty =
     !!data && data.kpis.overdueAccounts === 0 && data.kpis.overdueAmount === 0 && !data.cutoffDate;
@@ -95,6 +118,8 @@ export function BasePage() {
               </span>
             </div>
           </div>
+
+          <AlertsBanner data={alerts.data} hideBase />
 
           <KpiCards
             items={[
@@ -124,6 +149,11 @@ export function BasePage() {
 
           <InsightsCard title={`Insights for ${data.base.id}`} insights={data.insights} />
 
+          <TrendsChart
+            title={`Past-due trend · ${data.base.id}`}
+            points={trends.data?.points ?? []}
+          />
+
           <div className="card">
             <h2>Stage distribution</h2>
             <StageStack stages={data.stages} showAccounts />
@@ -147,8 +177,15 @@ export function BasePage() {
           {topAccounts.length > 0 ? (
             <div className="card">
               <h2>Largest accounts</h2>
+              {editing ? (
+                <AccountEditForm
+                  account={editing}
+                  baseId={baseId}
+                  onClose={() => setEditing(null)}
+                />
+              ) : null}
               <div className="wrap">
-                <table className="data" style={{ minWidth: 640 }}>
+                <table className="data" style={{ minWidth: isAdmin ? 780 : 640 }}>
                   <thead>
                     <tr>
                       <th style={{ textAlign: 'left' }}>Client</th>
@@ -156,7 +193,9 @@ export function BasePage() {
                       <th>Amount</th>
                       <th>Stage</th>
                       <th>Status</th>
+                      <th>Next action</th>
                       <th>Last contact</th>
+                      {isAdmin ? <th>Edit</th> : null}
                     </tr>
                   </thead>
                   <tbody>
@@ -193,13 +232,43 @@ export function BasePage() {
                             {stage?.label ?? '—'}
                           </td>
                           <td>{a.status || '—'}</td>
+                          <td>
+                            {a.next_action || '—'}
+                            {a.next_action_date ? (
+                              <small
+                                style={{
+                                  display: 'block',
+                                  color: 'var(--mu)',
+                                }}
+                              >
+                                {a.next_action_date}
+                              </small>
+                            ) : null}
+                          </td>
                           <td>{a.last_contacted || 'No record'}</td>
+                          {isAdmin ? (
+                            <td>
+                              <button
+                                type="button"
+                                onClick={() => setEditing(a)}
+                                aria-label={`Edit ${a.client_name}`}
+                              >
+                                Edit
+                              </button>
+                            </td>
+                          ) : null}
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
+              {isAdmin ? (
+                <p className="hint">
+                  Admins can edit status, next action, notes, and last contacted. Changes are
+                  audited.
+                </p>
+              ) : null}
             </div>
           ) : null}
 

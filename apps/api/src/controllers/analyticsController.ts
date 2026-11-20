@@ -14,6 +14,8 @@ export function createAnalyticsController(service: AnalyticsService): {
   baseAnalytics: RequestHandler;
   baseAccounts: RequestHandler;
   trends: RequestHandler;
+  baseTrends: RequestHandler;
+  alerts: RequestHandler;
 } {
   const dashboard: RequestHandler = async (req, res, next) => {
     try {
@@ -60,12 +62,49 @@ export function createAnalyticsController(service: AnalyticsService): {
   const trends: RequestHandler = async (req, res, next) => {
     try {
       const { segment } = parseSegmentQuery(req.query);
-      const body = await service.getTrends(segment);
+      const base =
+        typeof req.query.base === 'string' && req.query.base.trim()
+          ? req.query.base
+          : undefined;
+      const body = await service.getTrends(segment, base);
       res.json(body);
     } catch (err) {
       next(err);
     }
   };
 
-  return { dashboard, listBases, baseAnalytics, baseAccounts, trends };
+  const baseTrends: RequestHandler = async (req, res, next) => {
+    try {
+      const { segment } = parseSegmentQuery(req.query);
+      const baseId = String(req.params.id ?? '');
+      const body = await service.getTrends(segment, baseId);
+      res.json(body);
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  const alerts: RequestHandler = async (req, res, next) => {
+    try {
+      const { segment } = parseSegmentQuery(req.query);
+      const base =
+        typeof req.query.base === 'string' && req.query.base.trim()
+          ? req.query.base
+          : undefined;
+      const body = await service.getCriticalStageAlerts(segment, base);
+      res.json(body);
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  return {
+    dashboard,
+    listBases,
+    baseAnalytics,
+    baseAccounts,
+    trends,
+    baseTrends,
+    alerts,
+  };
 }

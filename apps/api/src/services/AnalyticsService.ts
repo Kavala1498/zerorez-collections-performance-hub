@@ -87,6 +87,21 @@ export type TrendPoint = {
   stages: StageBucket[];
 };
 
+/** Account that entered stage 4 or 5 between the previous and latest upload. */
+export type CriticalStageAlert = {
+  accountId: string;
+  base: string;
+  segment: Segment;
+  clientName: string;
+  companyName: string | null;
+  amountDue: number;
+  previousStage: StageId | null;
+  currentStage: StageId;
+  previousCutoffDate: string;
+  currentCutoffDate: string;
+  status: string | null;
+};
+
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100;
 }
@@ -287,13 +302,25 @@ export class AnalyticsService {
     };
   }
 
-  async getTrends(segment: AnalyticsSegment) {
+  async getTrends(segment: AnalyticsSegment, baseIdRaw?: string) {
+    let baseId: string | null = null;
+    if (baseIdRaw != null && baseIdRaw !== '') {
+      baseId = resolveCatalogBaseId(baseIdRaw);
+      if (!baseId) {
+        throw new AppError('NOT_FOUND', `Unknown base: ${baseIdRaw}`, 404);
+      }
+    }
+
     const [snapshots, uploads] = await Promise.all([
       this.repo.listSnapshots(),
       this.repo.listUploads(),
     ]);
     const uploadById = new Map(uploads.map((u) => [u.id, u]));
-    const filtered = snapshots.filter((s) => matchesSegment(s.segment, segment));
+    const filtered = snapshots.filter((s) => {
+      if (!matchesSegment(s.segment, segment)) return false;
+      if (baseId && s.base !== baseId) return false;
+      return true;
+    });
 
     const byUpload = new Map<string, Snapshot[]>();
     for (const snap of filtered) {
@@ -329,7 +356,92 @@ export class AnalyticsService {
       return (a.uploadedAt ?? '').localeCompare(b.uploadedAt ?? '');
     });
 
-    return { segment, points };
+    return {
+      segment,
+      base: baseId ? { id: baseId, name: baseName(baseId) } : null,
+      points,
+    };
+  }
+
+  /**
+   * Accounts that moved into critical stages (4 or 5) between the previous
+   * and latest upload cutoffs. Stage is recomputed from service_date vs cutoff.
+   */
+  async getCriticalStageAlerts(segment: AnalyticsSegment, baseIdRaw?: string) {
+    let baseId: string | null = null;
+    if (baseIdRaw != null && baseIdRaw !== '') {
+      baseId = resolveCatalogBaseId(baseIdRaw);
+      if (!baseId) {
+        throw new AppError('NOT_FOUND', `Unknown base: ${baseIdRaw}`, 404);
+      }
+    }
+
+    const [accounts, uploads] = await Promise.all([
+      this.repo.listAccounts(),
+      this.repo.listUploads(),
+    ]);
+
+    const ordered = [...uploads].sort((a, b) => {
+      const byUploaded = a.uploaded_at.localeCompare(b.uploaded_at);
+      if (byUploaded !== 0) return byUploaded;
+      return a.cutoff_date.localeCompare(b.cutoff_date);
+    });
+
+    if (ordered.length < 2) {
+      return {
+        segment,
+        base: baseId ? { id: baseId, name: baseName(baseId) } : null,
+        previousCutoffDate: null as string | null,
+        currentCutoffDate: ordered[0]?.cutoff_date ?? null,
+        alerts: [] as CriticalStageAlert[],
+      };
+    }
+
+    const previous = ordered[ordered.length - 2]!;
+    const current = ordered[ordered.length - 1]!;
+    const alerts: CriticalStageAlert[] = [];
+
+    for (const account of accounts) {
+      if (account.resolved_at) continue;
+      if (!matchesSegment(account.segment, segment)) continue;
+      if (baseId && account.base !== baseId) continue;
+
+      const prevDays = daysBetween(account.service_date, previous.cutoff_date);
+      const currDays = daysBetween(account.service_date, current.cutoff_date);
+      const previousStage = Number.isFinite(prevDays) ? stageFromDays(prevDays) : null;
+      const currentStage = Number.isFinite(currDays) ? stageFromDays(currDays) : null;
+
+      if (currentStage == null || currentStage < 4) continue;
+      const wasCritical = previousStage != null && previousStage >= 4;
+      if (wasCritical) continue;
+
+      alerts.push({
+        accountId: account.id,
+        base: account.base,
+        segment: account.segment,
+        clientName: account.client_name,
+        companyName: account.company_name ?? null,
+        amountDue: roundMoney(account.amount_due),
+        previousStage,
+        currentStage,
+        previousCutoffDate: previous.cutoff_date,
+        currentCutoffDate: current.cutoff_date,
+        status: account.status ?? null,
+      });
+    }
+
+    alerts.sort((a, b) => {
+      if (b.amountDue !== a.amountDue) return b.amountDue - a.amountDue;
+      return a.clientName.localeCompare(b.clientName);
+    });
+
+    return {
+      segment,
+      base: baseId ? { id: baseId, name: baseName(baseId) } : null,
+      previousCutoffDate: previous.cutoff_date,
+      currentCutoffDate: current.cutoff_date,
+      alerts,
+    };
   }
 
   private async loadContext(segment: AnalyticsSegment): Promise<{

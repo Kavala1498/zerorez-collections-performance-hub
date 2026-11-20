@@ -1,17 +1,20 @@
 import { google, type sheets_v4 } from 'googleapis';
 import { JWT } from 'google-auth-library';
-import type { Account, Snapshot, Upload } from '@zerorez/shared';
+import type { Account, AccountChange, Snapshot, Upload } from '@zerorez/shared';
 import { AppError } from '../errors/AppError.js';
 import { expandPrivateKey, getEnv } from '../config/env.js';
 import type {
   AccountsRepository,
   HealthStatus,
+  PersistAccountPatchPayload,
   PersistUploadPayload,
 } from './AccountsRepository.js';
 import {
   ACCOUNT_COLUMNS,
+  accountChangeToRow,
   accountToRow,
   rowToAccount,
+  rowToAccountChange,
   rowToSnapshot,
   rowToUpload,
   snapshotToRow,
@@ -109,6 +112,13 @@ export class SheetsAccountsRepository implements AccountsRepository {
     return structuredClone(snapshots);
   }
 
+  async listAccountChanges(accountId?: string): Promise<AccountChange[]> {
+    const rows = await this.readDataRows('account_changes');
+    const changes = rows.map(rowToAccountChange).filter((c) => c.id && c.account_id);
+    if (!accountId) return changes;
+    return changes.filter((c) => c.account_id === accountId);
+  }
+
   async persistUpload(payload: PersistUploadPayload): Promise<void> {
     const accountValues = [[...ACCOUNT_COLUMNS], ...payload.accounts.map(accountToRow)];
     const uploadRow = uploadToRow(payload.upload);
@@ -145,6 +155,47 @@ export class SheetsAccountsRepository implements AccountsRepository {
         });
       }
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Sheets write failed';
+      throw new AppError('SHEETS_ERROR', message, 502);
+    }
+
+    this.invalidateCache();
+  }
+
+  async persistAccountPatch(payload: PersistAccountPatchPayload): Promise<void> {
+    const accounts = await this.listAccounts();
+    const idx = accounts.findIndex((a) => a.id === payload.account.id);
+    if (idx < 0) {
+      throw new AppError('NOT_FOUND', `Account not found: ${payload.account.id}`, 404);
+    }
+    const next = [...accounts];
+    next[idx] = structuredClone(payload.account);
+    const accountValues = [[...ACCOUNT_COLUMNS], ...next.map(accountToRow)];
+    const changeRows = payload.changes.map(accountChangeToRow);
+
+    try {
+      await this.sheets.spreadsheets.values.clear({
+        spreadsheetId: this.spreadsheetId,
+        range: 'accounts!A:ZZ',
+      });
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: this.spreadsheetId,
+        range: 'accounts!A1',
+        valueInputOption: 'RAW',
+        requestBody: { values: accountValues },
+      });
+
+      if (changeRows.length) {
+        await this.sheets.spreadsheets.values.append({
+          spreadsheetId: this.spreadsheetId,
+          range: 'account_changes!A:E',
+          valueInputOption: 'RAW',
+          insertDataOption: 'INSERT_ROWS',
+          requestBody: { values: changeRows },
+        });
+      }
+    } catch (err) {
+      if (err instanceof AppError) throw err;
       const message = err instanceof Error ? err.message : 'Sheets write failed';
       throw new AppError('SHEETS_ERROR', message, 502);
     }

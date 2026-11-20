@@ -1,4 +1,11 @@
-import type { Account, Segment, StageId, Upload } from '@zerorez/shared';
+import type {
+  Account,
+  AccountChange,
+  AllowedStatus,
+  Segment,
+  StageId,
+  Upload,
+} from '@zerorez/shared';
 
 export type AnalyticsSegment = 'all' | Segment;
 
@@ -108,6 +115,61 @@ export type UploadResult = {
   snapshotsCreated: number;
   accountsOpen: number;
   accountsResolved: number;
+};
+
+export type TrendPoint = {
+  uploadId: string;
+  cutoffDate: string;
+  uploadedAt: string | null;
+  overdueAmount: number;
+  overdueAccounts: number;
+  stages: StageBucket[];
+};
+
+export type TrendsResponse = {
+  segment: AnalyticsSegment;
+  base: { id: string; name: string } | null;
+  points: TrendPoint[];
+};
+
+export type CriticalStageAlert = {
+  accountId: string;
+  base: string;
+  segment: Segment;
+  clientName: string;
+  companyName: string | null;
+  amountDue: number;
+  previousStage: StageId | null;
+  currentStage: StageId;
+  previousCutoffDate: string;
+  currentCutoffDate: string;
+  status: string | null;
+};
+
+export type AlertsResponse = {
+  segment: AnalyticsSegment;
+  base: { id: string; name: string } | null;
+  previousCutoffDate: string | null;
+  currentCutoffDate: string | null;
+  alerts: CriticalStageAlert[];
+};
+
+export type AccountPatch = {
+  status?: AllowedStatus | '' | null;
+  next_action?: string | null;
+  next_action_date?: string | null;
+  notes?: string | null;
+  last_contacted?: string | null;
+};
+
+export type AccountPatchResponse = {
+  account: Account;
+  change: AccountChange;
+};
+
+export type AccountChangesResponse = {
+  accountId: string;
+  changes: AccountChange[];
 };
 
 export type ApiErrorBody = {

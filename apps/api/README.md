@@ -14,9 +14,15 @@ Express + TypeScript API for Zerorez Collections Performance Hub.
 | `GET` | `/api/bases?segment=` | signed-in | 14 bases + severity colors |
 | `GET` | `/api/bases/:id/analytics?segment=` | signed-in | base KPIs, ranking, insights |
 | `GET` | `/api/bases/:id/accounts?segment=` | signed-in | open accounts for a base |
-| `GET` | `/api/trends?segment=` | signed-in | snapshot evolution |
+| `GET` | `/api/bases/:id/trends?segment=` | signed-in | snapshot trends for one base |
+| `GET` | `/api/trends?segment=&base=` | signed-in | snapshot evolution (optional base filter) |
+| `GET` | `/api/alerts?segment=&base=` | signed-in | accounts that entered stage 4/5 since prior upload |
+| `PATCH` | `/api/accounts/:id` | **admin** | edit status / next action / notes / last contacted (audit log) |
+| `GET` | `/api/accounts/:id/changes` | signed-in | account change history |
 
 `segment` defaults to `all`. Errors use `{ error: { code, message, details? } }`.
+
+PATCH body fields: `status`, `next_action`, `next_action_date`, `notes` (→ `acc_notes`), `last_contacted`. Each change writes `updated_by` / `updated_at` on the account and an `account_changes` audit row.
 
 Send `Authorization: Bearer <Google ID token>` when auth is enabled. Domain restriction and admin allowlist come from `AUTH_ALLOWED_DOMAIN` / `AUTH_ADMIN_EMAILS`.
 

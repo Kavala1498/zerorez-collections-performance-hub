@@ -1,10 +1,15 @@
 import type {
+  AccountChangesResponse,
+  AccountPatch,
+  AccountPatchResponse,
+  AlertsResponse,
   AnalyticsSegment,
   ApiErrorBody,
   BaseAccountsResponse,
   BaseAnalyticsResponse,
   BasesListResponse,
   DashboardResponse,
+  TrendsResponse,
   UploadResult,
   UploadsListResponse,
 } from './types';
@@ -121,5 +126,54 @@ export async function uploadWorkbook(input: {
     method: 'POST',
     body: form,
   });
+  return parseJson(res);
+}
+
+export async function fetchTrends(
+  segment: AnalyticsSegment,
+  baseId?: string,
+): Promise<TrendsResponse> {
+  const params = new URLSearchParams({ segment });
+  if (baseId) params.set('base', baseId);
+  const res = await apiFetch(`/api/trends?${params.toString()}`);
+  return parseJson(res);
+}
+
+export async function fetchBaseTrends(
+  baseId: string,
+  segment: AnalyticsSegment,
+): Promise<TrendsResponse> {
+  const res = await apiFetch(
+    `/api/bases/${encodeURIComponent(baseId)}/trends?${segmentQuery(segment)}`,
+  );
+  return parseJson(res);
+}
+
+export async function fetchAlerts(
+  segment: AnalyticsSegment,
+  baseId?: string,
+): Promise<AlertsResponse> {
+  const params = new URLSearchParams({ segment });
+  if (baseId) params.set('base', baseId);
+  const res = await apiFetch(`/api/alerts?${params.toString()}`);
+  return parseJson(res);
+}
+
+export async function patchAccount(
+  accountId: string,
+  patch: AccountPatch,
+): Promise<AccountPatchResponse> {
+  const res = await apiFetch(`/api/accounts/${encodeURIComponent(accountId)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  });
+  return parseJson(res);
+}
+
+export async function fetchAccountChanges(
+  accountId: string,
+): Promise<AccountChangesResponse> {
+  const res = await apiFetch(`/api/accounts/${encodeURIComponent(accountId)}/changes`);
   return parseJson(res);
 }

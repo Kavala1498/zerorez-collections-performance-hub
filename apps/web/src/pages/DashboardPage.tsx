@@ -33,8 +33,8 @@ export function DashboardPage() {
       isError={false}
       error={null}
       isEmpty={isEmpty}
-      emptyTitle="No data loaded"
-      emptyMessage="Go to Upload data and upload a collections Excel file to populate the dashboard."
+          emptyTitle="No data loaded"
+      emptyMessage="Go to Upload data and upload a collections Excel file. Once saved, every viewer of this link will see the same shared snapshot."
     >
       {data ? (
         <>

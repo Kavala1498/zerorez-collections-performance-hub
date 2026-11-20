@@ -1,6 +1,6 @@
 # Zerorez Collections Performance Hub
 
-Internal AR collections CRM for Zerorez: upload accounts-receivable Excel files, view a portfolio dashboard and per-base analytics, and generate automated insights. Persistence is Google Sheets (later phases).
+Internal AR collections CRM for Zerorez: upload accounts-receivable Excel files, view a portfolio dashboard and per-base analytics, and generate automated insights. Persistence is Google Sheets.
 
 ## Monorepo layout
 
@@ -13,9 +13,14 @@ reference/        Visual MVP HTML (read-only design reference)
 
 Managed with **pnpm workspaces**. Shared business logic (bases, stages, `stageFromDays`, `normalizeStatus`, `buildInsights`) lives in `@zerorez/shared` so the API and web app stay consistent.
 
-## Phase 1 (current)
+## Phases
 
-Scaffolding, tooling (TypeScript strict, ESLint, Prettier, Vitest), and a complete `packages/shared` package with unit tests. Apps are placeholders until later phases.
+1. Scaffold + `@zerorez/shared`
+2. Excel workbook parser (`exceljs`)
+3. **Sheets repository + upload API** (current)
+4. Analytics endpoints
+5. Frontend
+6. Auth + deploy
 
 ## Scripts
 
@@ -24,6 +29,12 @@ pnpm install
 pnpm test
 pnpm lint
 pnpm typecheck
+
+# API with in-memory store (no Google credentials)
+REPOSITORY=memory pnpm --filter @zerorez/api dev
+
+# Create Sheets tabs/headers (requires service account env — see .env.example)
+pnpm --filter @zerorez/api setup-sheets
 ```
 
 ## License

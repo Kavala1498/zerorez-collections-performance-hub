@@ -6,7 +6,7 @@
   "description": "Zerorez Collections Performance Hub — AR collections CRM",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "build": "pnpm -r run build",
+    "build": "pnpm --filter @zerorez/shared build && pnpm -r --filter '!@zerorez/shared' run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",

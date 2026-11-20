@@ -1,0 +1,59 @@
+:root {
+  /* Brand / layout (arquitectura §7) */
+  --brand: #0a3c64;
+  --navy: #0a3c64;
+  --sidebar: #0a1626;
+  --accent: #f5c542;
+
+  /* Surfaces (light) */
+  --bg: #f3f6f9;
+  --sf: #ffffff;
+  --tx: #14202b;
+  --mu: #5b6b7a;
+  --bd: #d9e1e8;
+  --hl: #e8f0f7;
+
+  /* Stage colors */
+  --s1: #8fbf8a;
+  --s2: #f4b26e;
+  --s3: #e8923a;
+  --s4: #e06a6a;
+  --s5: #c8412a;
+
+  --sidebar-text: #b9c7d6;
+  --sidebar-muted: #6f8397;
+  --sidebar-hover: #12233a;
+  --sidebar-active: #13263d;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+:root[data-theme='dark'] {
+  --bg: #0f1720;
+  --sf: #17222d;
+  --tx: #e6edf3;
+  --mu: #92a3b3;
+  --bd: #2a3948;
+  --hl: #1e3347;
+  --s1: #5f9a5a;
+  --s2: #c98a47;
+  --s3: #bd6f22;
+  --s4: #b84d4d;
+  --s5: #a3321e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0f1720;
+    --sf: #17222d;
+    --tx: #e6edf3;
+    --mu: #92a3b3;
+    --bd: #2a3948;
+    --hl: #1e3347;
+    --s1: #5f9a5a;
+    --s2: #c98a47;
+    --s3: #bd6f22;
+    --s4: #b84d4d;
+    --s5: #a3321e;
+  }
+}

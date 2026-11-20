@@ -17,9 +17,9 @@ Managed with **pnpm workspaces**. Shared business logic (bases, stages, `stageFr
 
 1. Scaffold + `@zerorez/shared`
 2. Excel workbook parser (`exceljs`)
-3. **Sheets repository + upload API** (current)
+3. Sheets repository + upload API
 4. Analytics endpoints
-5. Frontend
+5. **Frontend** (current)
 6. Auth + deploy
 
 ## Scripts
@@ -32,6 +32,9 @@ pnpm typecheck
 
 # API with in-memory store (no Google credentials)
 REPOSITORY=memory pnpm --filter @zerorez/api dev
+
+# Web app (proxies /api → http://localhost:3001)
+pnpm --filter @zerorez/web dev
 
 # Create Sheets tabs/headers (requires service account env — see .env.example)
 pnpm --filter @zerorez/api setup-sheets

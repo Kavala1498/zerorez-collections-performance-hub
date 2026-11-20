@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { Account, Snapshot, Upload } from '@zerorez/shared';
+import type { Account, AccountChange, Snapshot, Upload } from '@zerorez/shared';
 import {
+  accountChangeToRow,
   accountToRow,
   rowToAccount,
+  rowToAccountChange,
   rowToSnapshot,
   rowToUpload,
   snapshotToRow,
@@ -30,6 +32,8 @@ describe('sheetColumns round-trip', () => {
       first_seen: '2026-11-01T00:00:00.000Z',
       last_seen: '2026-11-19T00:00:00.000Z',
       resolved_at: null,
+      updated_by: 'admin@zerorez.com',
+      updated_at: '2026-11-19T12:00:00.000Z',
     };
     const back = rowToAccount(accountToRow(account));
     expect(back).toMatchObject({
@@ -39,7 +43,20 @@ describe('sheetColumns round-trip', () => {
       status: 'P2P',
       bm_notes: null,
       resolved_at: null,
+      updated_by: 'admin@zerorez.com',
+      updated_at: '2026-11-19T12:00:00.000Z',
     });
+  });
+
+  it('round-trips account change audit rows', () => {
+    const change: AccountChange = {
+      id: 'Dallas|INV-1|2026-11-19T12:00:00.000Z',
+      account_id: 'Dallas|INV-1',
+      changed_at: '2026-11-19T12:00:00.000Z',
+      changed_by: 'admin@zerorez.com',
+      changes: [{ field: 'status', from: 'P2P', to: 'Escalated' }],
+    };
+    expect(rowToAccountChange(accountChangeToRow(change))).toEqual(change);
   });
 
   it('round-trips uploads with JSON warnings', () => {

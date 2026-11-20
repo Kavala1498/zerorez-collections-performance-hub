@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { AccountsRepository } from '../repositories/AccountsRepository.js';
+import { createAccountsController } from '../controllers/accountsController.js';
 import { createAnalyticsController } from '../controllers/analyticsController.js';
 import { createAuthController } from '../controllers/authController.js';
 import { createHealthController } from '../controllers/healthController.js';
@@ -10,6 +11,7 @@ import {
   type AuthOptions,
 } from '../middleware/auth.js';
 import { uploadMiddleware } from '../middleware/upload.js';
+import { AccountService } from '../services/AccountService.js';
 import { AnalyticsService } from '../services/AnalyticsService.js';
 import { UploadService } from '../services/UploadService.js';
 
@@ -23,8 +25,10 @@ export function createApiRouter(options: ApiRouterOptions): Router {
   const router = Router();
   const uploadService = new UploadService(repo);
   const analyticsService = new AnalyticsService(repo);
+  const accountService = new AccountService(repo);
   const uploads = createUploadsController(uploadService);
   const analytics = createAnalyticsController(analyticsService);
+  const accounts = createAccountsController(accountService);
   const health = createHealthController(repo);
   const authCtrl = createAuthController();
   const requireAuth = createAuthMiddleware(auth);
@@ -48,7 +52,12 @@ export function createApiRouter(options: ApiRouterOptions): Router {
   router.get('/bases', analytics.listBases);
   router.get('/bases/:id/analytics', analytics.baseAnalytics);
   router.get('/bases/:id/accounts', analytics.baseAccounts);
+  router.get('/bases/:id/trends', analytics.baseTrends);
   router.get('/trends', analytics.trends);
+  router.get('/alerts', analytics.alerts);
+
+  router.patch('/accounts/:id', requireRole('admin'), accounts.patch);
+  router.get('/accounts/:id/changes', accounts.listChanges);
 
   return router;
 }

@@ -605,6 +605,122 @@ label.field select {
   font-size: 12px;
 }
 
+.trend-chart {
+  width: 100%;
+  overflow: hidden;
+}
+
+.trend-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.trend-grid {
+  stroke: var(--bd);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.trend-line {
+  stroke: var(--navy);
+  stroke-width: 2.5;
+}
+
+.trend-dot {
+  fill: var(--accent);
+  stroke: var(--navy);
+  stroke-width: 1.5;
+}
+
+.trend-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.trend-legend strong {
+  display: block;
+  font-size: 12.5px;
+}
+
+.trend-legend span {
+  color: var(--mu);
+  font-size: 12px;
+}
+
+.alerts-card {
+  border-color: color-mix(in srgb, var(--s5) 40%, var(--bd));
+  background: color-mix(in srgb, var(--s5) 8%, var(--sf));
+}
+
+.alerts-card h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.alerts-count {
+  background: color-mix(in srgb, var(--s5) 22%, var(--hl));
+  color: var(--s5);
+  font-weight: 700;
+}
+
+.alerts-table tbody tr {
+  cursor: pointer;
+}
+
+.alert-stage {
+  display: inline-block;
+  background: color-mix(in srgb, var(--s5) 35%, var(--sf));
+  color: #10202c;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+.account-edit {
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  background: var(--hl);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.account-edit-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.account-edit-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.notes-input {
+  width: 100%;
+  margin-top: 3px;
+  font: inherit;
+  padding: 7px 8px;
+  border: 1px solid var(--bd);
+  border-radius: 6px;
+  background: var(--sf);
+  color: var(--tx);
+  resize: vertical;
+}
+
+.form-error {
+  color: var(--s5);
+  font-weight: 600;
+  margin: 10px 0 0;
+}
+
 @media (max-width: 560px) {
   .by2 {
     display: none;

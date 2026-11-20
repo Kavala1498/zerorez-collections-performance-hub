@@ -1,11 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { fetchDashboard } from '../api/client';
+import { fetchAlerts, fetchDashboard, fetchTrends } from '../api/client';
+import { AlertsBanner } from '../components/AlertsBanner';
 import { InsightsCard } from '../components/InsightsCard';
 import { KpiCards } from '../components/KpiCards';
 import { QueryState } from '../components/QueryState';
 import { SegmentToggle } from '../components/SegmentToggle';
 import { StageStack } from '../components/StageStack';
+import { TrendsChart } from '../components/TrendsChart';
 import { useSegment } from '../hooks/useSegment';
 import { formatMoney, formatMoney0, formatPercent } from '../lib/format';
 
@@ -16,6 +18,16 @@ export function DashboardPage() {
   const query = useQuery({
     queryKey: ['dashboard', segment],
     queryFn: () => fetchDashboard(segment),
+  });
+
+  const trends = useQuery({
+    queryKey: ['trends', segment],
+    queryFn: () => fetchTrends(segment),
+  });
+
+  const alerts = useQuery({
+    queryKey: ['alerts', segment],
+    queryFn: () => fetchAlerts(segment),
   });
 
   const data = query.data;
@@ -45,6 +57,8 @@ export function DashboardPage() {
             </span>
           </div>
 
+          <AlertsBanner data={alerts.data} />
+
           <KpiCards
             items={[
               {
@@ -71,6 +85,11 @@ export function DashboardPage() {
           />
 
           <InsightsCard title="Portfolio insights" insights={data.insights} />
+
+          <TrendsChart
+            title="Portfolio past-due trend"
+            points={trends.data?.points ?? []}
+          />
 
           <div className="card">
             <h2>Portfolio by delinquency stage</h2>

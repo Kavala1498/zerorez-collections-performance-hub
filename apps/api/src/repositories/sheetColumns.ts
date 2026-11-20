@@ -1,4 +1,4 @@
-import type { Account, Snapshot, Upload } from '@zerorez/shared';
+import type { Account, AccountChange, Snapshot, Upload } from '@zerorez/shared';
 
 export const ACCOUNT_COLUMNS = [
   'id',
@@ -25,6 +25,8 @@ export const ACCOUNT_COLUMNS = [
   'first_seen',
   'last_seen',
   'resolved_at',
+  'updated_by',
+  'updated_at',
 ] as const;
 
 export const BASE_COLUMNS = ['id', 'name', 'aliases'] as const;
@@ -53,12 +55,21 @@ export const SNAPSHOT_COLUMNS = [
 
 export const SETTINGS_COLUMNS = ['key', 'value'] as const;
 
+export const ACCOUNT_CHANGE_COLUMNS = [
+  'id',
+  'account_id',
+  'changed_at',
+  'changed_by',
+  'changes',
+] as const;
+
 export const SHEET_TABS = [
   'accounts',
   'bases',
   'uploads',
   'snapshots',
   'settings',
+  'account_changes',
 ] as const;
 
 export type SheetTab = (typeof SHEET_TABS)[number];
@@ -126,6 +137,48 @@ export function rowToAccount(row: string[]): Account {
     first_seen: emptyToNull(get(21)),
     last_seen: emptyToNull(get(22)),
     resolved_at: emptyToNull(get(23)),
+    updated_by: emptyToNull(get(24)),
+    updated_at: emptyToNull(get(25)),
+  };
+}
+
+export function accountChangeToRow(change: AccountChange): string[] {
+  return [
+    change.id,
+    change.account_id,
+    change.changed_at,
+    change.changed_by,
+    JSON.stringify(change.changes),
+  ];
+}
+
+export function rowToAccountChange(row: string[]): AccountChange {
+  const get = (i: number) => row[i] ?? '';
+  let changes: AccountChange['changes'] = [];
+  const raw = get(4);
+  if (raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) {
+        changes = parsed.map((entry) => {
+          const e = entry as { field?: unknown; from?: unknown; to?: unknown };
+          return {
+            field: String(e.field ?? ''),
+            from: e.from == null || e.from === '' ? null : String(e.from),
+            to: e.to == null || e.to === '' ? null : String(e.to),
+          };
+        });
+      }
+    } catch {
+      changes = [];
+    }
+  }
+  return {
+    id: get(0),
+    account_id: get(1),
+    changed_at: get(2),
+    changed_by: get(3),
+    changes,
   };
 }
 

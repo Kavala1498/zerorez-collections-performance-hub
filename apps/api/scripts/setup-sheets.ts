@@ -13,6 +13,7 @@ import { JWT } from 'google-auth-library';
 import { BASES, DEFAULT_STAGE_WINDOWS } from '@zerorez/shared';
 import { expandPrivateKey, getEnv } from '../src/config/env.js';
 import {
+  ACCOUNT_CHANGE_COLUMNS,
   ACCOUNT_COLUMNS,
   BASE_COLUMNS,
   SETTINGS_COLUMNS,
@@ -82,11 +83,14 @@ async function main(): Promise<void> {
         { range: 'uploads!A1', values: [[...UPLOAD_COLUMNS]] },
         { range: 'snapshots!A1', values: [[...SNAPSHOT_COLUMNS]] },
         { range: 'settings!A1', values: [[...SETTINGS_COLUMNS], ...settingsRows] },
+        { range: 'account_changes!A1', values: [[...ACCOUNT_CHANGE_COLUMNS]] },
       ],
     },
   });
 
-  console.log(`Spreadsheet ${spreadsheetId} is ready (accounts/bases/uploads/snapshots/settings).`);
+  console.log(
+    `Spreadsheet ${spreadsheetId} is ready (accounts/bases/uploads/snapshots/settings/account_changes).`,
+  );
 }
 
 main().catch((err) => {

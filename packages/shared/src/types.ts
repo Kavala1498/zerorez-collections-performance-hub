@@ -41,8 +41,29 @@ export const AccountSchema = z.object({
   first_seen: z.string().nullable().optional(),
   last_seen: z.string().nullable().optional(),
   resolved_at: z.string().nullable().optional(),
+  /** Last CRM editor (email). Set by PATCH /api/accounts/:id. */
+  updated_by: z.string().nullable().optional(),
+  updated_at: z.string().nullable().optional(),
 });
 export type Account = z.infer<typeof AccountSchema>;
+
+/** One field mutation recorded by an account PATCH. */
+export const AccountChangeEntrySchema = z.object({
+  field: z.string().min(1),
+  from: z.string().nullable(),
+  to: z.string().nullable(),
+});
+export type AccountChangeEntry = z.infer<typeof AccountChangeEntrySchema>;
+
+/** Audit row for CRM account edits (Sheets tab `account_changes`). */
+export const AccountChangeSchema = z.object({
+  id: z.string().min(1),
+  account_id: z.string().min(1),
+  changed_at: z.string().min(1),
+  changed_by: z.string().min(1),
+  changes: z.array(AccountChangeEntrySchema).min(1),
+});
+export type AccountChange = z.infer<typeof AccountChangeSchema>;
 
 export const UploadSchema = z.object({
   id: z.string().min(1),

@@ -261,6 +261,10 @@ describe('AnalyticsService', () => {
 
     const commercial = await service.getTrends('C');
     expect(commercial.points[1]?.overdueAmount).toBe(250);
+
+    const dallas = await service.getTrends('all', 'Dallas');
+    expect(dallas.base?.id).toBe('Dallas');
+    expect(dallas.points[1]?.overdueAmount).toBe(250);
   });
 
   it('throws NOT_FOUND for unknown bases', async () => {

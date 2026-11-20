@@ -87,7 +87,7 @@ export function BasePage() {
       {data ? (
         <>
           <div className="bar">
-            <h2 style={{ margin: 0, fontSize: 20 }}>{data.base.name}</h2>
+            <h2 style={{ margin: 0, fontSize: 20 }}>{data.base.id}</h2>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
               <SegmentToggle value={segment} onChange={setSegment} />
               <span className="pill">
@@ -122,7 +122,7 @@ export function BasePage() {
             ]}
           />
 
-          <InsightsCard title={`Insights for ${data.base.name}`} insights={data.insights} />
+          <InsightsCard title={`Insights for ${data.base.id}`} insights={data.insights} />
 
           <div className="card">
             <h2>Stage distribution</h2>
@@ -222,7 +222,7 @@ export function BasePage() {
                   role="link"
                   tabIndex={0}
                 >
-                  <span>{row.name}</span>
+                  <span>{row.id}</span>
                   <span
                     className="b"
                     style={{

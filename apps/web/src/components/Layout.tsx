@@ -7,7 +7,8 @@ import { Sidebar } from './Sidebar';
 function crumbLabel(pathname: string, baseId?: string): string {
   if (pathname.startsWith('/cargar')) return 'Upload data';
   if (pathname.startsWith('/bases/') && baseId) {
-    return BASES.find((b) => b.id === baseId)?.name ?? baseId;
+    // Match reference MVP labels (e.g. St.Louis, BayArea, SaltLakeCity).
+    return BASES.find((b) => b.id === baseId)?.id ?? baseId;
   }
   return 'Dashboard';
 }

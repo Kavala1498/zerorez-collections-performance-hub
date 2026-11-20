@@ -58,7 +58,7 @@ export function Sidebar({ onNavigate }: Props) {
             onClick={onNavigate}
           >
             <i style={{ background: color }} aria-hidden="true" />
-            <span>{base.name}</span>
+            <span>{base.id}</span>
             <em>{formatCompactK(amount)}</em>
           </NavLink>
         );

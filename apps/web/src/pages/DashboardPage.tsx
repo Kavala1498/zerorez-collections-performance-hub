@@ -62,7 +62,7 @@ export function DashboardPage() {
               },
               {
                 label: 'Highest-balance base',
-                value: data.kpis.highestBase?.name ?? '—',
+                value: data.kpis.highestBase?.id ?? '—',
                 hint: data.kpis.highestBase
                   ? formatMoney0(data.kpis.highestBase.amount)
                   : undefined,
@@ -103,7 +103,7 @@ export function DashboardPage() {
                       key={base.id}
                       onClick={() => navigate(`/bases/${encodeURIComponent(base.id)}`)}
                     >
-                      <td className="n">{base.name}</td>
+                      <td className="n">{base.id}</td>
                       {base.stages.map((st) => (
                         <td
                           key={st.id}

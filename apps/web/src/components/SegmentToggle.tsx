@@ -1,0 +1,29 @@
+import type { AnalyticsSegment } from '../api/types';
+
+const OPTIONS: Array<{ value: AnalyticsSegment; label: string }> = [
+  { value: 'all', label: 'Todos' },
+  { value: 'C', label: 'Comercial' },
+  { value: 'R', label: 'Residencial' },
+];
+
+type Props = {
+  value: AnalyticsSegment;
+  onChange: (seg: AnalyticsSegment) => void;
+};
+
+export function SegmentToggle({ value, onChange }: Props) {
+  return (
+    <div className="seg" role="group" aria-label="Segmento">
+      {OPTIONS.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          className={value === opt.value ? 'on' : undefined}
+          onClick={() => onChange(opt.value)}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}

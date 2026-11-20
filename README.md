@@ -58,6 +58,8 @@ This writes `/tmp/zerorez-synthetic.xlsx` and prints parse → KPI smoke output 
 
 ## Deploy (Vercel — static only)
 
+**Live:** https://zerorez-collections-performance-hub.vercel.app
+
 1. Framework: Vite (or Other).
 2. Build command: `pnpm install && pnpm --filter @zerorez/shared build && pnpm --filter @zerorez/web build`
 3. Output directory: `apps/web/dist`

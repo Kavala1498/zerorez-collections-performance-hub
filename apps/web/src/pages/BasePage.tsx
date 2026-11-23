@@ -142,11 +142,6 @@ export function BasePage() {
 
           <InsightsCard title={`Insights for ${data.base.id}`} insights={data.insights} />
 
-          <TrendsChart
-            title={`Past-due trend · ${data.base.id}`}
-            points={trends?.points ?? []}
-          />
-
           <div className="card">
             <h2>Stage distribution</h2>
             <StageStack stages={data.stages} showAccounts />
@@ -293,6 +288,11 @@ export function BasePage() {
               );
             })}
           </div>
+
+          <TrendsChart
+            title={`Past-due trend · ${data.base.id}`}
+            points={trends?.points ?? []}
+          />
         </>
       ) : null}
     </QueryState>

@@ -76,11 +76,6 @@ export function DashboardPage() {
 
           <InsightsCard title="Portfolio insights" insights={data.insights} />
 
-          <TrendsChart
-            title="Portfolio past-due trend"
-            points={trends?.points ?? []}
-          />
-
           <div className="card">
             <h2>Portfolio by delinquency stage</h2>
             <StageStack stages={data.stages} />
@@ -148,6 +143,11 @@ export function DashboardPage() {
             </div>
             <p className="hint">Click a base to open its analytics.</p>
           </div>
+
+          <TrendsChart
+            title="Portfolio past-due trend"
+            points={trends?.points ?? []}
+          />
         </>
       ) : null}
     </QueryState>
